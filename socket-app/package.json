@@ -1,0 +1,14 @@
+{
+  "name": "socket-app",
+  "version": "1.0.0",
+  "description": "nunya",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Markham Anderson",
+  "license": "ISC",
+  "dependencies": {
+    "websocket": "^1.0.31"
+  }
+}
