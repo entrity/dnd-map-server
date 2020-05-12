@@ -17,10 +17,15 @@ canvas, #control-panel {
 canvas {
 	position: absolute;
 }
+.passthrough {
+	pointer-events: none;
+}
 #canvas-map {
 	z-index: 1;
 }
-
 #canvas-fog {
 	z-index: 3;
+}
+#overlay {
+	z-index: 11;
 }
