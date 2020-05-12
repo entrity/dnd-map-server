@@ -1,4 +1,5 @@
 import React from 'react';
+import MapCpItem from './MapCpItem.jsx';
 import { fog } from './Fog.jsx';
 
 class Game extends React.Component {
@@ -7,6 +8,7 @@ class Game extends React.Component {
 	constructor (props) {
 		super(props);
 		this.isHost = !!props.host;
+		this.addMap = this.addMap.bind(this);
 		this.setTool = this.setTool.bind(this);
 		this.drawMap = this.drawMap.bind(this);
 		this.handleCheckbox = this.handleCheckbox.bind(this);
@@ -15,10 +17,16 @@ class Game extends React.Component {
 		this.onMouseDown = this.onMouseDown.bind(this);
 		this.onMouseMove = this.onMouseMove.bind(this);
 		this.onClick = this.onClick.bind(this);
+		let defaultMap = {
+			name: '(default)',
+			url: "/FFtri9T.png",
+		};
 		this.state = {x: -1, y: -1, tool: 'fog',
 		radius: 55,
 		fogOpacity: 0.5,
-		mapUrl: "/FFtri9T.png"};
+		newMapName: '',
+		maps: [defaultMap, {name: 'kiwi', url: '/kiwi.jpeg'}],
+		map: defaultMap};
 	}
 
 	componentDidMount () {
@@ -45,7 +53,6 @@ class Game extends React.Component {
 	}
 
 	onMouseMove (evt) {
-console.log('mousemovedd')
 		let x = evt.offsetX, y = evt.offsetY;
 		this.setState({x: x, y: y});
 		if (this.state.tool == 'fog') {
@@ -80,14 +87,23 @@ console.log('mousemovedd')
 		context.drawImage(img, 0, 0);
 	}
 
-	drawMap () {
+	addMap (evt) {
+		let name = this.state.newMapName.trim();
+		if (!name || !name.length) return;
+		this.state.newMapName = '';
+		this.setState({ maps: [{name: name}].concat(this.state.maps||[]) });
+	}
+
+	drawMap (map) {
+		if (!map) map = this.state.map;
+		if (!map) return;
 		let img = new Image();
 		const ctx = this.mapCanvas.getContext('2d');
 		img.onload = () => {
 			this.resizeCanvases(img.width, img.height);
 			ctx.drawImage(img, 0, 0);
 		}
-		img.src = this.state.mapUrl;
+		img.src = map.url;
 	}
 
 	getImg (callback) {
@@ -107,17 +123,13 @@ console.log('mousemovedd')
 	}
 
 	handleTextField (evt) {
-		let obj = {};
 		let key = evt.target.dataset.field;
-		obj[key] = evt.target.value;
-		this.setState(obj);
+		this.setState({[key]: evt.target.value});
 		if (key == 'fogOpacity') document.getElementById('canvas-fog').style.opacity = evt.target.value;
 	}
 	handleCheckbox (evt) {
-		let obj = {};
 		let key = evt.target.dataset.field;
-		obj[key] = evt.target.value;
-		this.setState(obj);
+		this.setState({[key]: evt.target.checked});
 	}
 
 	render () {
@@ -138,7 +150,7 @@ console.log('mousemovedd')
 			<div id="control-panel">
 				<div>
 					<label>
-						<input type="checkbox" data-field="showCpPcs" onChange={this.handleCheckbox} />
+						<input type="checkbox" data-field="showCpMaps" onChange={this.handleCheckbox} />
 						Maps...
 					</label>
 					<label>
@@ -146,7 +158,7 @@ console.log('mousemovedd')
 						NPCs...
 					</label>
 					<label>
-						<input type="checkbox" data-field="showCpMaps" onChange={this.handleCheckbox} />
+						<input type="checkbox" data-field="showCpPcs" onChange={this.handleCheckbox} />
 						PCs...
 					</label>
 					<button onClick={fog.reset}>Reset Fog</button>
@@ -172,7 +184,20 @@ console.log('mousemovedd')
 	renderCpMaps () {
 		return (
 			<div id="maps-cp">
-			fds
+				<table>
+					<tbody>
+						<tr>
+							<th>Maps {this.state.maps && this.state.maps.length}</th>
+						</tr>
+						<tr>
+							<td>
+								<input onChange={this.handleTextField} data-field="newMapName" value={this.state.newMapName} />
+								<button onClick={this.addMap}>Add map</button>
+								<ol>{ this.state.maps.map( item => <MapCpItem key={item.name} value={item} update={this.updateMapCpItems.bind(this)} maps={this.state.maps} load={this.loadMap.bind(this)} /> ) }</ol>
+							</td>
+						</tr>
+					</tbody>
+				</table>
 			</div>
 		)
 	}
@@ -191,6 +216,16 @@ console.log('mousemovedd')
 			fds
 			</div>
 		)
+	}
+
+	updateMapCpItems (maps) {
+		console.log('update called')
+		this.setState({maps: maps});
+	}
+
+	loadMap (map) {
+		this.setState({map: map});
+		this.drawMap(map);
 	}
 
 	resizeCanvases (w, h) {
