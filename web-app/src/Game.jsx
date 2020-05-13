@@ -1,5 +1,8 @@
 import React from 'react';
 import MapCpItem from './MapCpItem.jsx';
+import NpcCpItem from './NpcCpItem.jsx';
+import Overlay from './Overlay.jsx';
+import TokenDiv from './TokenDiv.jsx';
 import { fog } from './Fog.jsx';
 import Map from './Map.jsx'
 
@@ -13,19 +16,29 @@ class Game extends React.Component {
 		this.setTool = this.setTool.bind(this);
 		this.drawMap = this.drawMap.bind(this);
 		this.handleCheckbox = this.handleCheckbox.bind(this);
-		this.handleTextField = this.handleTextField.bind(this);
-		this.onMouseUp = this.onMouseUp.bind(this);
-		this.onMouseDown = this.onMouseDown.bind(this);
-		this.onMouseMove = this.onMouseMove.bind(this);
-		this.onClick = this.onClick.bind(this);
+		let npcs = [
+			{name: 'bar'},
+			{name: 'foo', url: '/belmont.jpg'},
+		];
+		let pcs = [
+			{name: 'arr'},
+			{name: 'win', url: '/redhead.jpg', y: 50, x: 50}
+		];
 		let defaultMap = new Map({
 			name: '(default)',
 			url: "/FFtri9T.png",
+			npcs: npcs,
+			pcs: pcs,
 		});
 		this.state = {x: -1, y: -1, tool: 'fog',
 		radius: 55,
 		fogOpacity: 0.5,
-		newMapName: '',
+		// showCpMaps: true,
+		// showCpNpcs: true,
+		npcs: npcs,
+		pcs: pcs,
+		tool: 'move',
+		pristineNpcs: [],
 		maps: [defaultMap, new Map({name: 'kiwi', url: '/kiwi.jpeg'})],
 		map: defaultMap};
 	}
@@ -46,17 +59,11 @@ class Game extends React.Component {
 		window.addEventListener('resize', this.drawMap);
 		/* Define canvas callbacks */
 		this.mapCanvas = document.getElementById('canvas-map');
-		this.overlay = document.getElementById('overlay');
-		this.overlay.addEventListener('mouseup', this.onMouseUp);
-		this.overlay.addEventListener('mousedown', this.onMouseDown);
-		this.overlay.addEventListener('mousemove', this.onMouseMove);
-		this.overlay.addEventListener('click', this.onClick);
 		this.drawMap();
 		this.load();
 	}
 
 	load () {
-		console.log(Object.entries(localStorage))
 		if (localStorage.getItem('maps')) {
 			this.setState({
 				maps: JSON.parse(localStorage.getItem('maps'))
@@ -101,35 +108,7 @@ class Game extends React.Component {
 		fog.erase(x, y, this.state.radius);
 		this.setState({ fogDots: fogDots }, this.save.bind(this));
 	}
-
-	onMouseMove (evt) {
-		let x = evt.offsetX, y = evt.offsetY;
-		this.setState({x: x, y: y});
-		if (this.state.tool === 'fog') {
-			this.setPointerOutline();
-			if (this.state.clickOn) this.fogErase(x, y);
-		}
-	}
-	onMouseUp (evt) { this.setState({ clickOn: false }) }
-	onMouseDown (evt) { this.setState({ clickOn: true }) }
-	onClick (evt) {
-		let x = evt.offsetX, y = evt.offsetY;
-		if (this.state.tool === 'fog') {
-			this.fogErase(x, y); 
-		}
-	}
 	
-	setPointerOutline () {
-		this.overlay.width = this.overlay.width;
-		let ctx = this.overlay.getContext('2d');
-		ctx.strokeStyle = 'yellow'
-		ctx.lineWidth = '2'
-		ctx.beginPath();
-		ctx.arc(this.state.x, this.state.y, this.state.radius, 0, 2*Math.PI);
-		ctx.stroke();
-		ctx.closePath();
-	}
-
 	draw (img, canvasId) {
 		console.log(`drawing to ${canvasId}`);
 		let canvas = document.getElementById(canvasId || 'canvas-map');
@@ -178,8 +157,7 @@ class Game extends React.Component {
 		reader.readAsDataURL(file);
 	}
 
-	handleTextField (evt) {
-		let key = evt.target.dataset.field;
+	handleText (key, evt) {
 		this.setState({[key]: evt.target.value});
 		if (key === 'fogOpacity') document.getElementById('canvas-fog').style.opacity = evt.target.value;
 	}
@@ -192,10 +170,10 @@ class Game extends React.Component {
 		return (
 			<div style={{"position": "relative"}}>
  				<canvas id="canvas-map" />
-				<canvas id="canvas-npcs" />
+				<TokenDiv id="canvas-npcs" tokens={this.state.npcs} />
 				<canvas id="canvas-fog" className="passthrough" />
-				<canvas id="canvas-pcs" />
-				<canvas id="overlay" />
+				<TokenDiv id="canvas-pcs" tokens={this.state.pcs} />
+				{this.state.tool == 'fog' && <Overlay radius={this.state.radius} fogErase={this.fogErase.bind(this)} width={this.state.w} height={this.state.h} />}
 				{this.renderControlPanel()}
 			</div>
 		);
@@ -218,7 +196,7 @@ class Game extends React.Component {
 						PCs...
 					</label>
 					<button onClick={this.fogReset.bind(this)}>Reset Fog</button>
-					<input onChange={this.handleTextField} data-field="fogOpacity" value={this.state.fogOpacity} size="2" />
+					<input onChange={this.handleText.bind(this, 'fogOpacity')} value={this.state.fogOpacity} size="2" />
 					<label>
 						<input type="radio" name="tool" value="fog" onChange={this.setTool} />
 						fog
@@ -227,7 +205,7 @@ class Game extends React.Component {
 						<input type="radio" name="tool" value="move" onChange={this.setTool} />
 						move
 					</label>
-					<input onChange={this.handleTextField} data-field="radius" value={this.state.radius} size="2" />
+					<input onChange={this.handleText.bind(this, 'radius')} value={this.state.radius} size="2" />
 					<span>X {this.state.x} / Y {this.state.y}</span>
 				</div>
 				{this.state.showCpMaps && this.renderCpMaps()}
@@ -240,28 +218,36 @@ class Game extends React.Component {
 	renderCpMaps () {
 		return (
 			<div id="maps-cp">
-				<table>
-					<tbody>
-						<tr>
-							<th>Maps {this.state.maps && this.state.maps.length}</th>
-						</tr>
-						<tr>
-							<td>
-								<input onChange={this.handleTextField} data-field="newMapName" value={this.state.newMapName} />
-								<button onClick={this.addMap}>Add map</button>
-								<ol>{ this.state.maps.map( item => <MapCpItem key={item.name} value={item} update={this.updateMapCpItems.bind(this)} maps={this.state.maps} load={this.loadMap.bind(this)} /> ) }</ol>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+				<div>Maps {this.state.maps && this.state.maps.length}</div>
+				<input onChange={this.handleText.bind(this, 'newMapName')} value={this.state.newMapName || ''} placeholder='Map name' />
+				<button onClick={this.addMap}>Add map</button>
+				<ol>{ this.state.maps.map( (item, idx) => <MapCpItem key={item.name} index={idx} value={item} update={this.updateMapCpItems.bind(this)} maps={this.state.maps} load={this.loadMap.bind(this)} /> ) }</ol>
 			</div>
 		)
+	}
+
+	addNpc () {
+		let name = this.state.newNpcName.trim(); 
+		if (name.length) {
+			this.setState({
+				newNpcName: '',
+				npcs: this.state.npcs.slice().concat({name: name}),
+			}, () => {
+				this.state.npcs.forEach((npc) => {
+					if (!npc.url) return;
+
+				})
+			});
+		}
 	}
 
 	renderCpNpcs () {
 		return (
 			<div id="npcs-cp">
-			fds
+				<div>NPCs {this.state.npcs && this.state.npcs.length}</div>
+				<input onChange={this.handleText.bind(this, 'newNpcName')} value={this.state.newNpcName || ''} placeholder='NPC name' />
+				<button onClick={this.addNpc.bind(this)}>Add NPC</button>
+				<ol>{ this.state.npcs.map( (item, idx) => <NpcCpItem key={item.name} index={idx} value={item} /> ) }</ol>
 			</div>
 		)
 	}
@@ -279,16 +265,31 @@ class Game extends React.Component {
 		this.setState({maps: maps});
 	}
 
-	loadMap (map) {
-		this.setState({map: map});
-		this.drawMap(map);
+	loadMap (newMap, pristine) {
+		let maps = this.state.maps.slice();
+		if (this.state.map) {
+			let index = this.state.maps.indexOf(this.state.map);
+			let oldMapCopy = Object.assign(this.state.map);
+			oldMapCopy.fogDots = Object.assign(this.state.fogDots);
+			maps[index] = oldMapCopy;
+		}
+		let fogDots = pristine ? new Object : (newMap.fogDots || new Object());
+		this.setState({
+			map: newMap,
+			maps: maps,
+			fogDots: fogDots,
+		}, this.save.bind(this));
+		this.drawMap(newMap);
 	}
 
 	resizeCanvases (w, h) {
 		console.log('resizing canvas');
+		if (!w) w = window.innerWidth;
+		if (!h) h = window.innerHeight;
+		this.setState({ w: w, h: h });
 		document.querySelectorAll('canvas').forEach(canvas => {
-			canvas.width = w || window.innerWidth;
-			canvas.height = h || window.innerHeight;
+			canvas.width = w;
+			canvas.height = h;
 		});
 		this.fogReset(true);
 	}
@@ -296,7 +297,6 @@ class Game extends React.Component {
 	setTool (evt) {
 		console.log(evt.target.value, evt.target);
 		this.setState({ tool: evt.target.value });
-		this.overlay.style.zIndex = evt.target.value === 'fog' ? 11 : 0;
 	}
 }
 

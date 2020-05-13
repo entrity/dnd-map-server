@@ -23,6 +23,16 @@ canvas {
 #canvas-map {
 	z-index: 1;
 }
+#canvas-npcs img {
+	z-index: 2;
+}
+#canvas-pcs img {
+	z-index: 4;
+}
+#canvas-npcs img, #canvas-pcs img {
+	position: absolute;
+	cursor: grab;
+}
 #canvas-fog {
 	z-index: 3;
 }
