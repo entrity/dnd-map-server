@@ -11,7 +11,7 @@ class MapCpItem extends React.Component {
 		let name = this.props.value.name;
 		let maps = this.props.maps.slice().filter(m => {
 			console.log(m.name, name)
-			return m.name != name;
+			return m.name !== name;
 		})
 		this.props.update(maps);
 	}
@@ -20,7 +20,7 @@ class MapCpItem extends React.Component {
 		let name = this.props.value.name;
 		let maps = this.props.maps.slice(); // copy maps for immutability
 		maps.forEach(map => {
-			if (map.name == name)
+			if (map.name === name)
 				map[evt.target.dataset.field] = evt.target.value;
 		});
 		this.props.update(maps);	
