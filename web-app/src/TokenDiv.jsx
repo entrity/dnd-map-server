@@ -32,13 +32,11 @@ class Token extends React.Component {
   onMouseDown (evt) {
     this.props.select(this.props.obj)
     this.myRef.current.addEventListener('mousemove', this.onDrag);
-    console.log('aded histener')
     this.startX = evt.pageX - evt.target.offsetLeft;
     this.startY = evt.pageY - evt.target.offsetTop;
   }
   onMouseUp (evt) {
     this.myRef.current.removeEventListener('mousemove', this.onDrag);
-    console.log('---- histener')
   }
 
   render () {

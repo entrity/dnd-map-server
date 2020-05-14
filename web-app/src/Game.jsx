@@ -75,7 +75,6 @@ class Game extends React.Component {
 				map: this.state.maps[localStorage.getItem('mapIndex')],
 			})
 			this.drawMap(this.state.map);
-			fog.erase(222,222,155)
 		}
 		if (localStorage.getItem('radius'))
 			this.setState({radius: localStorage.getItem('radius')});

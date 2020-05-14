@@ -13,7 +13,7 @@ class Overlay extends React.Component {
     node.addEventListener('click', this.onClick.bind(this))
     node.addEventListener('mousemove', this.onMouseMove.bind(this))
     node.addEventListener('mousedown', this.onMouseDown.bind(this))
-    node.addEventListener('mouseUp', this.onMouseUp.bind(this))
+    node.addEventListener('mouseup', this.onMouseUp.bind(this))
   }
 
   onMouseMove (evt) {
