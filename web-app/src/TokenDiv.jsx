@@ -1,52 +1,55 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 
 class Token extends React.Component {
   constructor (props) {
     super(props);
-    this.name = props.obj.name;
-    this.url = props.obj.url;
-    this.x = props.obj.x;
-    this.y = props.obj.y;
+    this.myRef = React.createRef();
+    this.onDrag = this.onDrag.bind(this);
   }
 
   componentDidMount () {
-    // const node = ReactDOM.findDOMNode(this);
-    // node.addEventListener('click', (evt => {
-    //   console.log('clicked', this);
+    const node = this.myRef.current;    
+    node.addEventListener('click', this.onClick.bind(this));
+    node.addEventListener('mouseover', this.onMouseUp.bind(this));
+    node.addEventListener('mouseout', this.onMouseUp.bind(this));
+    node.addEventListener('mousedown', this.onMouseDown.bind(this));
+    node.addEventListener('mouseup', this.onMouseUp.bind(this));
+  }
 
-    // }).bind(this))
-    // node.addEventListener('mousedown', (evt => {
-    //   console.log('clicked', this);
-    //   this.props.mouseDown();
-    // }).bind(this))
+  onClick (evt) {
+    this.onMouseDown(evt);
+    this.onMouseUp(evt);
+  }
+  onDrag (evt) {
+    console.log(this.startX, evt.pageX, evt.offsetX, evt.clientX)
+    let obj = Object.assign(this.props.obj, {
+      x: evt.pageX - this.startX,
+      y: evt.pageY - this.startY,
+    });
+    console.log(obj)
+    this.props.update(obj);
+  }
+  onMouseDown (evt) {
+    this.props.select(this.props.obj)
+    this.myRef.current.addEventListener('mousemove', this.onDrag);
+    console.log('aded histener')
+    this.startX = evt.pageX - evt.target.offsetLeft;
+    this.startY = evt.pageY - evt.target.offsetTop;
+  }
+  onMouseUp (evt) {
+    this.myRef.current.removeEventListener('mousemove', this.onDrag);
+    console.log('---- histener')
   }
 
   render () {
     return (
-      <img src={this.url} style={{top: this.y, left: this.x}} />
+      <div ref={this.myRef}
+        className={this.props.selected ? 'selected' : ''}
+        style={{top: this.props.obj.y, left: this.props.obj.x}}>
+        <img src={this.props.obj.url} alt={this.props.obj.name} className="passthrough" />
+      </div>  
     );
   }
 }
 
-class TokenDiv extends React.Component {
-  mouseDown (item) {
-    this.setState({selected: item}, (() => {
-          console.log(this.state)
-        }).bind(this))
-  }
-
-  render () {
-    return (
-      <div id={this.props.id}>
-        { this.props.tokens
-          .filter(obj => { return obj.url })
-          .map((item, idx) => <Token key={item.name} obj={item}
-            mouseDown={this.mouseDown.bind(this, item)}
-          />) }
-      </div>
-    );
-  }
-}
-
-export default TokenDiv;
+export default Token;

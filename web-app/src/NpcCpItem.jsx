@@ -1,10 +1,6 @@
 import React from 'react';
 
 class NpcCpItem extends React.Component {
-  constructor (props) {
-    super(props);
-  }
-
   deleteItem () {
     let name = this.props.value.name;
     let maps = this.props.maps.slice().filter(m => {

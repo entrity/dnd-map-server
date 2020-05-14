@@ -23,19 +23,27 @@ canvas {
 #canvas-map {
 	z-index: 1;
 }
-#canvas-npcs img {
+#canvas-npcs * {
 	z-index: 2;
 }
-#canvas-pcs img {
+#canvas-pcs * {
 	z-index: 4;
 }
-#canvas-npcs img, #canvas-pcs img {
+#canvas-npcs div, #canvas-pcs div {
 	position: absolute;
+	pointer-events: all;
 	cursor: grab;
+}
+#canvas-npcs img, #canvas-pcs img {
+	position: relative;
 }
 #canvas-fog {
 	z-index: 3;
 }
 #overlay {
 	z-index: 11;
+}
+.selected {
+	border: 6px dotted yellow;
+	margin: -6px;
 }

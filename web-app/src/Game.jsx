@@ -2,7 +2,7 @@ import React from 'react';
 import MapCpItem from './MapCpItem.jsx';
 import NpcCpItem from './NpcCpItem.jsx';
 import Overlay from './Overlay.jsx';
-import TokenDiv from './TokenDiv.jsx';
+import Token from './TokenDiv.jsx';
 import { fog } from './Fog.jsx';
 import Map from './Map.jsx'
 
@@ -22,7 +22,7 @@ class Game extends React.Component {
 		];
 		let pcs = [
 			{name: 'arr'},
-			{name: 'win', url: '/redhead.jpg', y: 50, x: 50}
+			{name: 'win', url: '/redhead.jpg', y: 50, x: 90}
 		];
 		let defaultMap = new Map({
 			name: '(default)',
@@ -30,9 +30,10 @@ class Game extends React.Component {
 			npcs: npcs,
 			pcs: pcs,
 		});
-		this.state = {x: -1, y: -1, tool: 'fog',
+		this.state = {
+		x: -1, y: -1,
 		radius: 55,
-		fogOpacity: 0.5,
+		fogOpacity: 0.85,
 		// showCpMaps: true,
 		// showCpNpcs: true,
 		npcs: npcs,
@@ -59,6 +60,9 @@ class Game extends React.Component {
 		window.addEventListener('resize', this.drawMap);
 		/* Define canvas callbacks */
 		this.mapCanvas = document.getElementById('canvas-map');
+		this.mapCanvas.addEventListener('click', ((evt) => {
+			this.selectToken(null);
+		}));
 		this.drawMap();
 		this.load();
 	}
@@ -102,7 +106,7 @@ class Game extends React.Component {
 		let modulus = Math.max(3, Math.round(this.state.radius / 5));
 		x -= x % modulus;
 		y -= y % modulus;
-		let fogDots = this.state.fogDots ? Object.assign(this.state.fogDots) : new Object();
+		let fogDots = this.state.fogDots ? Object.assign(this.state.fogDots) : {};
 		let oldVal = fogDots ? fogDots[[x,y]] : 0;
 		fogDots[[x,y].join(',')] = Math.max(this.state.radius, oldVal || 0);
 		fog.erase(x, y, this.state.radius);
@@ -159,21 +163,44 @@ class Game extends React.Component {
 
 	handleText (key, evt) {
 		this.setState({[key]: evt.target.value});
-		if (key === 'fogOpacity') document.getElementById('canvas-fog').style.opacity = evt.target.value;
 	}
 	handleCheckbox (evt) {
 		let key = evt.target.dataset.field;
 		this.setState({[key]: evt.target.checked});
 	}
 
+	selectToken (token) {
+		this.setState({selectedToken: token && token.name});
+	}
+	updateToken (listKey, token) {
+		let list = this.state[listKey].slice();
+		let index = list.findIndex(obj => { return obj.name === token.name });
+		list[index] = token;
+		this.setState({ [listKey]: list });
+	}
+
+	renderTokens (key) {
+		return (
+			this.state[key]
+			.filter(obj => {return !!obj.url})
+			.map((token) => {return <Token
+				key={token.name}
+				obj={token}
+				update={this.updateToken.bind(this, key)}
+				select={this.selectToken.bind(this)}
+				selected={this.state.selectedToken === token.name}
+			/>})
+		);
+	}
+
 	render () {
 		return (
 			<div style={{"position": "relative"}}>
  				<canvas id="canvas-map" />
-				<TokenDiv id="canvas-npcs" tokens={this.state.npcs} />
-				<canvas id="canvas-fog" className="passthrough" />
-				<TokenDiv id="canvas-pcs" tokens={this.state.pcs} />
-				{this.state.tool == 'fog' && <Overlay radius={this.state.radius} fogErase={this.fogErase.bind(this)} width={this.state.w} height={this.state.h} />}
+				<div id="canvas-npcs">{this.renderTokens('npcs')}</div>
+				<canvas id="canvas-fog" className="passthrough" style={{opacity: this.state.fogOpacity}} />
+				<div id="canvas-pcs">{this.renderTokens('pcs')}</div>
+				{this.state.tool === 'fog' && <Overlay radius={this.state.radius} fogErase={this.fogErase.bind(this)} width={this.state.w} height={this.state.h} />}
 				{this.renderControlPanel()}
 			</div>
 		);
@@ -273,7 +300,7 @@ class Game extends React.Component {
 			oldMapCopy.fogDots = Object.assign(this.state.fogDots);
 			maps[index] = oldMapCopy;
 		}
-		let fogDots = pristine ? new Object : (newMap.fogDots || new Object());
+		let fogDots = pristine ? {} : (newMap.fogDots || {});
 		this.setState({
 			map: newMap,
 			maps: maps,
