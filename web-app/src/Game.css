@@ -23,18 +23,18 @@ canvas {
 #canvas-map {
 	z-index: 1;
 }
-#canvas-npcs * {
-	z-index: 2;
-}
-#canvas-pcs * {
+.token.pc {
 	z-index: 4;
 }
-#canvas-npcs div, #canvas-pcs div {
+.token {
+	z-index: 2;
+}
+div.token {
 	position: absolute;
 	pointer-events: all;
 	cursor: grab;
 }
-#canvas-npcs img, #canvas-pcs img {
+img.token {
 	position: relative;
 }
 #canvas-fog {

@@ -7,6 +7,9 @@ class Token extends React.Component {
     this.onDrag = this.onDrag.bind(this);
   }
 
+  get game () { return this.props.game }
+  get token () { return this.props.token }
+
   componentDidMount () {
     const node = this.myRef.current;    
     node.addEventListener('click', this.onClick.bind(this));
@@ -21,16 +24,14 @@ class Token extends React.Component {
     this.onMouseUp(evt);
   }
   onDrag (evt) {
-    console.log(this.startX, evt.pageX, evt.offsetX, evt.clientX)
-    let obj = Object.assign(this.props.obj, {
+    let obj = Object.assign(this.token, {
       x: evt.pageX - this.startX,
       y: evt.pageY - this.startY,
     });
-    console.log(obj)
-    this.props.update(obj);
+    this.game.updateToken(obj);
   }
   onMouseDown (evt) {
-    this.props.select(this.props.obj)
+    this.game.selectToken(this.props.index);
     this.myRef.current.addEventListener('mousemove', this.onDrag);
     this.startX = evt.pageX - evt.target.offsetLeft;
     this.startY = evt.pageY - evt.target.offsetTop;
@@ -40,11 +41,19 @@ class Token extends React.Component {
   }
 
   render () {
+    let klass = [
+      this.props.selected ? 'selected' : '',
+      this.token.pc ? 'pc' : '',
+      'token'
+    ].join(' ');
     return (
       <div ref={this.myRef}
-        className={this.props.selected ? 'selected' : ''}
-        style={{top: this.props.obj.y, left: this.props.obj.x}}>
-        <img src={this.props.obj.url} alt={this.props.obj.name} className="passthrough" />
+        className={klass}
+        style={{top: this.token.y, left: this.token.x}}>
+        <img
+          src={this.token.url}
+          alt={this.token.name}
+          className="token passthrough" />
       </div>  
     );
   }
