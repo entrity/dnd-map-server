@@ -61,7 +61,11 @@ class Game extends React.Component {
 	componentDidMount () {
 		this.setUpWebsocket();
 		window.addEventListener('resize', this.drawMap.bind(this));
-		this.mapCanvasRef.current.addEventListener('click', ((evt) => { this.selectToken(null) }));
+		this.mapCanvasRef.current.addEventListener('click', ((evt) => {
+			this.selectToken(null)
+			this.setState({showMapsMenu: false});
+			this.setState({showTokensMenu: false});
+		}));
 		this.loadMap(); /* load default map */
 		this.loadLocalStorage(); /* load map from storage, if any */
 	}

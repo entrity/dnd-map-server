@@ -1,5 +1,8 @@
 import React from 'react';
 import CpMap from './cp/Map.jsx';
+import CpToken from './cp/Token.jsx';
+
+function deepCopy (argument) { return JSON.parse(JSON.stringify(argument)) }
 
 class ControlPanel extends React.Component {
   constructor (props) {
@@ -8,12 +11,14 @@ class ControlPanel extends React.Component {
   }
 
   get game () { return this.props.game }
-  get maps () { return this.game && this.game.state.maps }
+  get maps () { return (this.game && this.game.state.pristine) || {} }
   get mapsN () { return this.maps && Object.keys(this.maps).length }
+  get tokens () { return (this.game && this.game.tokens) || [] }
+  get tokensN () { return this.tokens && this.tokens.length }
 
-  handleCheckbox (key, evt) { this.setState({ [key]: evt.target.checked }) }
   handleLocalText (key, evt) { this.setState({ [key]: evt.target.value.trim() })}
 
+  handleCheckbox (key, evt) { this.game.setState({ [key]: evt.target.checked }) }
   handleText (key, evt) { this.game.setState({[key]: evt.target.value}) }
   setTool (tool) { this.game.setState({tool: tool}) }
 
@@ -35,6 +40,13 @@ class ControlPanel extends React.Component {
     this.props.setState({maps: maps});
   }
 
+  addToken () {
+    if (!this.state.newTokenName || this.state.newTokenName.trim() === '') return;
+    let tokens = deepCopy(this.tokens);
+    tokens.push({name: this.state.newTokenName.trim()});
+    this.game.setState({tokens: tokens});
+  }
+
   reset () {
     if (window.confirm('Delete local storage?')) {
       localStorage.clear();
@@ -47,8 +59,12 @@ class ControlPanel extends React.Component {
       <div>
         <div>
           <label>
-            <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showMaps')} />
+            <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showMapsMenu')} checked={!!this.game.state.showMapsMenu} />
             Maps...
+          </label>
+          <label>
+            <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showTokensMenu')} checked={!!this.game.state.showTokensMenu} />
+            Toks...
           </label>
           <button onClick={this.game.fogReset.bind(this.game)}>Reset Fog</button>
           <button onClick={this.reset.bind(this)}>RESET</button>
@@ -57,6 +73,7 @@ class ControlPanel extends React.Component {
           <input onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
         </div>
         {this.renderMaps()}
+        {this.renderTokens()}
       </div>
     )
   }
@@ -86,7 +103,7 @@ class ControlPanel extends React.Component {
   }
 
   renderMaps () {
-    if (this.state.showMaps)
+    if (this.game.state.showMapsMenu)
       return (
         <div id="maps-cp">
           <div>Maps {this.mapsN}</div>
@@ -95,11 +112,33 @@ class ControlPanel extends React.Component {
           <button onClick={this.addMap.bind(this)}>Add map</button>
 
           <ol>
-            { Object.keys(this.game.maps||[]).map((key) =>
+            { Object.keys(this.maps).map((key) =>
               <CpMap
                 key={key}
                 name={key}
-                map={this.game.maps[key]}
+                map={this.maps[key]}
+                game={this.game} />
+            )}
+          </ol>
+        </div>
+      );
+  }
+
+  renderTokens () {
+    if (this.game.state.showTokensMenu)
+      return (
+        <div id="tokens-cp">
+          <div>Tokens {this.tokensN}</div>
+
+          <input onChange={this.handleLocalText.bind(this, 'newTokenName')} value={this.state.newTokenName || ''} placeholder='Token name' />
+          <button onClick={this.addToken.bind(this)}>Add token</button>
+
+          <ol>
+            { this.tokens.map((token, index) =>
+              <CpToken
+                key={index}
+                index={index}
+                token={token}
                 game={this.game} />
             )}
           </ol>
