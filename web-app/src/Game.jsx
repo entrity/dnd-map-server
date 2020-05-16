@@ -131,13 +131,13 @@ class Game extends React.Component {
 		this.updateMap({fog: dots});
 	}
 
-	loadMap (mapName, collection='snapshots', forceCopy=false) {
+	loadMap (mapName, edit='snapshots', forceCopy=false) {
 		if (!mapName) mapName = this.mapName;
 		if (!this.state.pristine[mapName]) {
 			console.error('Attempted to load non-existant map', mapName);
 			return null;
 		}
-		let state = { mapName: mapName, edit: collection };
+		let state = { mapName: mapName, edit: edit };
 		/* Overwrite pristine using snapshot */
 		if (forceCopy || !this.state.snapshots[mapName]) {
 			let snapshots = deepCopy(this.state.snapshots);

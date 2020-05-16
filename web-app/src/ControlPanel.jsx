@@ -62,7 +62,7 @@ class ControlPanel extends React.Component {
   }
 
   renderEditControls () {
-    switch (this.game.edit) {
+    switch (this.game.state.edit) {
     case 'pristine':
       return (
         <span>
@@ -95,11 +95,11 @@ class ControlPanel extends React.Component {
           <button onClick={this.addMap.bind(this)}>Add map</button>
 
           <ol>
-            { Object.keys(this.maps).map((key) =>
+            { Object.keys(this.game.maps||[]).map((key) =>
               <CpMap
                 key={key}
                 name={key}
-                map={this.maps[key]}
+                map={this.game.maps[key]}
                 game={this.game} />
             )}
           </ol>
