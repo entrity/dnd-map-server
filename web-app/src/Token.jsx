@@ -46,6 +46,10 @@ class Token extends React.Component {
       this.token.pc ? 'pc' : '',
       'token'
     ].join(' ');
+    let imgKlass = [
+      this.token.dead ? 'dead' : '',
+      'token passthrough',
+    ].join(' ');
     return (
       <div ref={this.myRef}
         className={klass}
@@ -53,7 +57,7 @@ class Token extends React.Component {
         <img
           src={this.token.url}
           alt={this.token.name}
-          className="token passthrough" />
+          className={imgKlass} />
       </div>  
     );
   }

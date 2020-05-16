@@ -59,6 +59,11 @@ div.token {
 img.token {
 	position: relative;
 }
+img.token.dead {
+	filter: invert();
+	-webkit-transform: scaleY(-1);
+	transform: scaleY(-1);
+}
 .selected {
 	border: 6px dotted yellow;
 	margin: -6px;
