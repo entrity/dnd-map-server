@@ -11,18 +11,26 @@ class CpMap extends React.Component {
   get name () { return this.props.name }
   get url () { return this.props.map.url }
 
-	delete () {  this.props.delete(this.props.map) }
-  load (evt, pristine) { this.game.load(this.props.map, pristine) }
+	delete () {
+    let maps = JSON.parse(JSON.stringify(this.game.maps));
+    delete maps[this.name];
+    this.game.setState({maps: maps});
+  }
+  load (evt, collection='snapshots', edit='snapshots') {
+    this.game.setState({edit: collection}, () => {
+      this.game.loadMap(this.name, collection);
+    });
+  }
 
 	render () {
 		return (
 			<li>
-				<button onClick={this.load.bind(this, true)}>Edit Pristine</button>
+				<button onClick={this.load.bind(this, 'pristine', 'pristine')}>Edit Pristine</button>
 				<input placeholder="name" onChange={this.handleText.bind(this, 'name')} value={this.name} />
 				<input placeholder="url" onChange={this.handleText.bind(this, 'url')} value={this.url} />
-        <button onClick={this.game.loadMap.bind(this.game, this.name)}>Load Pristine</button>
-				<button onClick={this.game.loadMap.bind(this.game, this.name, true)}>Load Active</button>
-				<button onClick={this.props.delete}>Delete</button>
+        <button onClick={this.load.bind(this, 'pristine')}>Load Pristine</button>
+				<button onClick={this.load.bind(this)}>Load Active</button>
+				<button onClick={this.delete.bind(this)}>Delete</button>
 			</li>
 		);
 	}

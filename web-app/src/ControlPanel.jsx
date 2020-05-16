@@ -50,17 +50,28 @@ class ControlPanel extends React.Component {
             <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showMaps')} />
             Maps...
           </label>
-          <label>
-            <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showCpNpcs')} />
-            NPCs...
-          </label>
-          <label>
-            <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showCpPcs')} />
-            PCs...
-          </label>
           <button onClick={this.game.fogReset.bind(this.game)}>Reset Fog</button>
           <button onClick={this.reset.bind(this)}>RESET</button>
-          <input onChange={this.handleText.bind(this, 'fogOpacity')} value={this.game.state.opacity} size="2" />
+          <input onChange={this.handleText.bind(this, 'fogOpacity')} value={this.game.state.opacity} size="2" placeholder="fog" />
+          {this.renderEditControls()}
+          <input onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
+        </div>
+        {this.renderMaps()}
+      </div>
+    )
+  }
+
+  renderEditControls () {
+    switch (this.game.edit) {
+    case 'pristine':
+      return (
+        <span>
+          <button>copy2snap</button>
+        </span>
+      );
+    default:
+      return (
+        <span>
           <label>
             <input type="radio" name="tool" onChange={this.setTool.bind(this, 'fog')} />
             fog
@@ -69,11 +80,9 @@ class ControlPanel extends React.Component {
             <input type="radio" name="tool" onChange={this.setTool.bind(this, 'move')} />
             move
           </label>
-          <input onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" />
-        </div>
-        {this.renderMaps()}
-      </div>
-    )
+        </span>
+      );
+    }
   }
 
   renderMaps () {

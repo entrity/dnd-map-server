@@ -2,6 +2,12 @@
 	position: relative;
 }
 
+#wrapper {
+	position: relative;
+}
+#wrapper.pristine {
+}
+
 canvas, #control-panel {
 	top: 0;
 	left: 0;
@@ -23,6 +29,22 @@ canvas {
 #canvas-map {
 	z-index: 1;
 }
+#canvas-fog {
+	z-index: 3;
+	
+}
+#indicator {
+	z-index: 10;
+	pointer-events: none;
+}
+.pristine #indicator {
+	background: rgba(0,255,0, 0.1);
+	box-shadow: inset 0px 0px 40px 20px blue;
+	box-sizing: border-box;
+}
+#overlay {
+	z-index: 11;
+}
 .token.pc {
 	z-index: 4;
 }
@@ -36,12 +58,6 @@ div.token {
 }
 img.token {
 	position: relative;
-}
-#canvas-fog {
-	z-index: 3;
-}
-#overlay {
-	z-index: 11;
 }
 .selected {
 	border: 6px dotted yellow;

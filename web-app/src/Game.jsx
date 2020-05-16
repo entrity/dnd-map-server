@@ -4,21 +4,23 @@ import Token from './Token.jsx';
 import TokenConfig from './cp/TokenConfig.jsx';
 import ControlPanel from './ControlPanel.jsx';
 import { fog } from './Fog.jsx';
-import Map from './Map.jsx'
+
+function deepCopy (argument) { return JSON.parse(JSON.stringify(argument)) }
 
 class Game extends React.Component {
 	ws = new WebSocket('ws://localhost:8000/');
 
 	/* Current map */
-	get map () { 
-		if (!this.state.maps) return null;
-		return this.state.maps && this.mapName && this.state.maps[this.mapName];
+	get map () {
+		if (!this.state.edit || !this.state.mapName || !this.state[this.state.edit]) return
+		return this.state[this.state.edit][this.state.mapName];
 	}
+	get maps () { return this.state.edit && this.state[this.state.edit] }
 	get mapName () {
-		if (!this.state.mapName || this.state.mapName === 'undefined')
-			return Object.keys(this.state.maps).find(key => { return typeof key === 'string'});
+		if (this.state.mapName && this.state.mapName !== 'undefined')
+			return this.state.mapName;
 		else
-			return 'string' === typeof this.state.mapName ? this.state.mapName : null;
+			return Object.keys(this.pristine||{}).find(key => { return typeof key === 'string'});
 	}
 	get fog () { return this.map ? this.map.fog : null }
 	/* Selected token */
@@ -42,25 +44,26 @@ class Game extends React.Component {
 			fog: {},
 		};
 		this.state = {
-			cursorX: -1,
-			cursorY: -2,
 			radius: 55,
 			fogOpacity: 0.85,
 			tool: 'move',
-			maps: {
+			edit: 'pristine',
+			pristine: {
 				default: defaultMap,
 				kiwi: {url: '/kiwi.jpeg'},
 			},
+			mapName: 'default',
 			snapshots: {}, // non-pristine maps
-			tokens: tokens, // in play
 		};
+		console.log('maps', this.state.edit, this.maps)
 	}
 
 	componentDidMount () {
 		this.setUpWebsocket();
 		window.addEventListener('resize', this.drawMap.bind(this));
 		this.mapCanvasRef.current.addEventListener('click', ((evt) => { this.selectToken(null) }));
-		this.loadLocalStorage();
+		this.loadMap(); /* load default map */
+		this.loadLocalStorage(); /* load map from storage, if any */
 	}
 
 	setUpWebsocket () {
@@ -79,31 +82,41 @@ class Game extends React.Component {
 
 	loadLocalStorage () {
 		try {
-			let mapsJSON = localStorage.getItem('maps');
-			let mapName = localStorage.getItem('mapName');
-			let maps = mapsJSON && JSON.parse(mapsJSON);
 			let state = {};
-			if (maps) state.maps = maps;
-			state.mapName = mapName || (maps && Object.keys(maps)[0]);
-			let radius = localStorage.getItem('radius');
-			if (radius) state.radius = radius;
+			['pristine', 'snapshots'].forEach(key => {
+				let json = localStorage.getItem(key);
+				let obj = json ? JSON.parse(json) : {};
+				state[key] = Object.assign(this.state[key], obj);
+			});
+			['mapName', 'radius'].forEach(key => {
+				state[key] = localStorage.getItem(key);
+			});
+			if (!state.mapName || !state.pristine[state.mapName])
+				state.mapName = Object.keys(state.pristine)[0];
 			this.setState(state, this.loadMap.bind(this));
 		} catch (ex) {
 			console.error(ex);
+			['pristine', 'snapshots'].forEach(key => {
+				let json = localStorage.getItem(key);
+				console.warn('Loaded localStorage', key, json);
+			});
 			console.warn('clearing local storage')
 			localStorage.clear();
 		}
 	}
 
 	saveLocalStorage () {
-		localStorage.setItem('maps', JSON.stringify(this.state.maps));
+		if (this.state.pristine)
+			localStorage.setItem('pristine', JSON.stringify(this.state.pristine));
+		if (this.state.snapshots)
+			localStorage.setItem('snapshots', JSON.stringify(this.state.snapshots));
 		localStorage.setItem('mapName', this.state.mapName);
 		localStorage.setItem('radius', this.state.radius);
 	}
 
-	fogReset (updateFog) {
-		fog.reset()
-		if (updateFog) this.updateMap({fog: {}});
+	fogReset () {
+		fog.reset();
+		this.updateMap({fog: {}});
 	}
 
 	fogErase (x, y) {
@@ -118,31 +131,34 @@ class Game extends React.Component {
 		this.updateMap({fog: dots});
 	}
 
-	updateMap (attrs, mapName) {
-		if (!mapName) mapName = this.state.mapName;
-		let map = Object.assign(this.state.maps[mapName]||{}, attrs);
-		this.setState(prev => ({
-			maps: { ...prev.maps, [mapName]: map },
-		}), (() => {
+	loadMap (mapName, collection='snapshots', forceCopy=false) {
+		if (!mapName) mapName = this.mapName;
+		if (!this.state.pristine[mapName]) {
+			console.error('Attempted to load non-existant map', mapName);
+			return null;
+		}
+		let state = { mapName: mapName, edit: collection };
+		/* Overwrite pristine using snapshot */
+		if (forceCopy || !this.state.snapshots[mapName]) {
+			let snapshots = deepCopy(this.state.snapshots);
+			snapshots[mapName] = deepCopy(this.state.pristine[mapName]);
+			state.snapshots = snapshots;
+		}
+		this.setState(state, ((arg) => {
+			this.drawMap();
 			this.saveLocalStorage();
 		}));
 	}
-	
-	// draw (img, canvasId) {
-	// 	console.log(`drawing to ${canvasId}`);
-	// 	let canvas = document.getElementById(canvasId || 'canvas-map');
-	// 	let context = canvas.getContext('2d');
-	// 	context.drawImage(img, 0, 0);
-	// }
 
-	addMap (evt) {
-		let name = this.state.newMapName.trim();
-		if (!name || !name.length) return;
-		this.setState({
-			newMapName: '',
-			maps: [new Map({name: name})].concat(this.state.maps||[])
-		});
+	updateMap (attrs, mapName) {
+		if (!mapName) mapName = this.mapName;
+		let map = Object.assign(this.map, attrs);
+		this.setState(prev => ({
+			[this.edit]: { ...prev[this.edit], [mapName]: map },
+		}), this.saveLocalStorage);
 	}
+
+	updateSnapshot (attrs, mapName) { this.updateMap(attrs, mapName, 'snapshots') }
 
 	drawMap () {
 		if (!this.map || !this.map.url) return;
@@ -182,7 +198,7 @@ class Game extends React.Component {
 	updateToken (attrs, index) {
 		if (!index) index = this.state.selectedTokenIndex;
 		let tokens = JSON.parse(JSON.stringify(this.tokens)); // deep copy
-		tokens[index] = Object.assign(attrs, tokens[index]);
+		tokens[index] = Object.assign(tokens[index], attrs);
 		this.updateMap({ tokens: tokens });
 	}
 	deleteToken (index) {
@@ -207,6 +223,8 @@ class Game extends React.Component {
 						game={game}
 						selected={selectedIndex === index}
 					/>
+				else
+					return null;
 			})
 		);
 	}
@@ -217,12 +235,12 @@ class Game extends React.Component {
 	}
 
 	render () {
-		let klass = this.state.tool === 'fog' ? 'pristine' : 'active';
 		return (
-			<div id="wrapper" className={klass}>
+			<div id="wrapper" className={this.state.edit}>
  				<canvas id="canvas-map" ref={this.mapCanvasRef} />
  				{this.renderTokens()}
 				<canvas id="canvas-fog" className="passthrough" style={{opacity: this.state.fogOpacity}} />
+				<canvas id="indicator" />
 				{this.renderOverlay()}
 				<div id="control-panel">
 					<ControlPanel game={this} />
@@ -230,24 +248,6 @@ class Game extends React.Component {
 				</div>
 			</div>
 		);
-	}
-
-	loadMap (mapName, loadSnapshot) {
-		if (!mapName) mapName = this.mapName;
-		let map = null;
-		if (loadSnapshot)
-			map = this.state.snapshots[mapName] || this.state.maps[mapName];
-		else
-			map = this.state.maps[mapName];
-		this.setState({
-			mapName: mapName,
-			map: map,
-			tokens: map && map.tokens,
-			fog: (map && map.active) ? map.fog : {},
-		}, (() => {
-			this.drawMap()
-			this.saveLocalStorage();
-		}));
 	}
 
 	resizeCanvases (w, h) {
@@ -259,7 +259,7 @@ class Game extends React.Component {
 			canvas.width = w;
 			canvas.height = h;
 		});
-		this.fogReset(false);
+		fog.reset(); /* Fill fog canvas w/out saving */
 	}
 }
 
