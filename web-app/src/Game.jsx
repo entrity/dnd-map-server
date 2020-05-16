@@ -10,7 +10,7 @@ class Game extends React.Component {
 	ws = new WebSocket('ws://localhost:8000/');
 
 	/* Is the current user a dm or a player? */
-	get isHost () { return /host=/.test(window.location.href) }
+	get isHost () { return this.state.query.get('host') && (this.state.query.get('host') !== '0') }
 	/* Selected map (for selected `edit`) */
 	get map () {
 		if (!this.state.edit || !this.state.mapName || !this.state[this.state.edit]) return
@@ -27,7 +27,7 @@ class Game extends React.Component {
   get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
 	/* Selected token */
 	get token () { return this.tokens && !isNaN(this.state.selectedTokenIndex) && this.tokens[this.state.selectedTokenIndex] }
-	get tokens () { return this.map ? this.map.tokens : null }
+	get tokens () { return this.map ? this.map.tokens : [] }
 
 	constructor (props) {
 		super(props);
@@ -45,6 +45,7 @@ class Game extends React.Component {
 			fog: {},
 		};
 		this.state = {
+			query: new URLSearchParams(window.location.href.replace(/.*\?/, '')),
 			radius: 55,
 			fogOpacity: 0.85,
 			tool: 'move',
@@ -92,7 +93,7 @@ class Game extends React.Component {
 
 	onKeypress (evt) {
 		if (!this.isHost) return evt;
-		if (evt.target.tagName === 'INPUT' && evt.target.type !== 'text')
+		if (evt.target.tagName === 'INPUT' && evt.target.type === 'text')
 			return evt;
 		function toggleSub (key) {
 			let nextState = !(this.state.showHud && this.state[key]);
