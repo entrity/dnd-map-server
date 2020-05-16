@@ -1,16 +1,15 @@
 import React from 'react';
 import Overlay from './Overlay.jsx';
 import Token from './Token.jsx';
-import TokenConfig from './cp/TokenConfig.jsx';
 import ControlPanel from './ControlPanel.jsx';
 import { fog } from './Fog.jsx';
 
-function deepCopy (argument) { return JSON.parse(JSON.stringify(argument)) }
+function deepCopy (argument) { return argument === undefined ? null : JSON.parse(JSON.stringify(argument)) }
 
 class Game extends React.Component {
 	ws = new WebSocket('ws://localhost:8000/');
 
-	/* Current map */
+	/* Selected map (for selected `edit`) */
 	get map () {
 		if (!this.state.edit || !this.state.mapName || !this.state[this.state.edit]) return
 		return this.state[this.state.edit][this.state.mapName];
@@ -52,6 +51,8 @@ class Game extends React.Component {
 				default: defaultMap,
 				kiwi: {url: '/kiwi.jpeg'},
 			},
+			showHud: true,
+			showTokensMenu: true,
 			mapName: 'default',
 			snapshots: {}, // non-pristine maps
 		};
@@ -66,8 +67,22 @@ class Game extends React.Component {
 			this.setState({showMapsMenu: false});
 			this.setState({showTokensMenu: false});
 		}));
+		window.document.addEventListener('keypress', this.onKeypress.bind(this));
 		this.loadMap(); /* load default map */
 		this.loadLocalStorage(); /* load map from storage, if any */
+	}
+
+	onKeypress (evt) {
+		if (evt.target.tagName === 'INPUT') return evt;
+		function toggleSub (key) {
+			let nextState = !(this.state.showHud && this.state[key]);
+			this.setState({[key]: nextState, showHud: true});
+		}
+		switch(evt.code) {
+			case 'KeyH': this.setState({showHud: !this.state.showHud}); break;
+			case 'KeyM': toggleSub.bind(this)('showMapsMenu'); break;
+			case 'KeyT': toggleSub.bind(this)('showTokensMenu'); break;
+		}
 	}
 
 	setUpWebsocket () {
@@ -90,7 +105,7 @@ class Game extends React.Component {
 			['pristine', 'snapshots'].forEach(key => {
 				let json = localStorage.getItem(key);
 				let obj = json ? JSON.parse(json) : {};
-				state[key] = Object.assign(this.state[key], obj);
+				state[key] = Object.assign(deepCopy(this.state[key]), obj);
 			});
 			['mapName', 'radius'].forEach(key => {
 				state[key] = localStorage.getItem(key);
@@ -127,7 +142,7 @@ class Game extends React.Component {
 		let modulus = Math.max(3, Math.round(this.state.radius / 5));
 		x -= x % modulus;
 		y -= y % modulus;
-		let dots = Object.assign(this.map.fog||{});
+		let dots = Object.assign({}, this.map.fog||{});
 		if (Array.isArray(dots)) dots = {};
 		let key = [x,y].join(',');
 		dots[key] = Math.max(this.state.radius, dots[key] || 0);
@@ -154,11 +169,12 @@ class Game extends React.Component {
 		}));
 	}
 
-	updateMap (attrs, mapName) {
+	updateMap (attrs, mapName, edit) {
 		if (!mapName) mapName = this.mapName;
-		let map = Object.assign(this.map, attrs);
+		if (!edit) edit = this.state.edit;
+		let map = Object.assign(deepCopy(this.map), attrs);
 		this.setState(prev => ({
-			[this.edit]: { ...prev[this.edit], [mapName]: map },
+			[edit]: { ...prev[edit], [mapName]: map },
 		}), this.saveLocalStorage);
 	}
 
@@ -200,9 +216,9 @@ class Game extends React.Component {
 
 	selectToken (index) { this.setState({selectedTokenIndex: index}) }
 	updateToken (attrs, index) {
-		if (!index) index = this.state.selectedTokenIndex;
-		let tokens = JSON.parse(JSON.stringify(this.tokens)); // deep copy
-		tokens[index] = Object.assign(tokens[index], attrs);
+		if (isNaN(index)) index = this.state.selectedTokenIndex;
+		let tokens = deepCopy(this.tokens);
+		tokens[index] = Object.assign(deepCopy(tokens[index])||{}, attrs);
 		this.updateMap({ tokens: tokens });
 	}
 	deleteToken (index) {
@@ -210,7 +226,7 @@ class Game extends React.Component {
 			index = this.selectedTokenIndex;
 			delete this.selectedTokenIndex;
 		}
-		let tokens = JSON.parse(JSON.stringify(this.tokens)).splice(index, 1);
+		let tokens = deepCopy(this.tokens).splice(index, 1);
 		this.updateMap({tokens: tokens});
 	}
 
@@ -246,10 +262,7 @@ class Game extends React.Component {
 				<canvas id="canvas-fog" className="passthrough" style={{opacity: this.state.fogOpacity}} />
 				<canvas id="indicator" />
 				{this.renderOverlay()}
-				<div id="control-panel">
-					<ControlPanel game={this} />
-					{this.token && <TokenConfig token={this.token} game={this} />}
-				</div>
+				<div id="control-panel"><ControlPanel game={this} /></div>
 			</div>
 		);
 	}

@@ -41,10 +41,12 @@ class ControlPanel extends React.Component {
   }
 
   addToken () {
-    if (!this.state.newTokenName || this.state.newTokenName.trim() === '') return;
+    let name = this.state.newTokenName && this.state.newTokenName.trim();
+    if (!name && !name.length) return;
     let tokens = deepCopy(this.tokens);
-    tokens.push({name: this.state.newTokenName.trim()});
-    this.game.setState({tokens: tokens});
+    tokens.push({name: name});
+    console.log('Adding token', name, tokens)
+    this.game.updateMap({tokens: tokens});
   }
 
   reset () {
@@ -55,27 +57,30 @@ class ControlPanel extends React.Component {
   }
 
   render () {
-    return (
-      <div>
+    if (this.game.state.showHud)
+      return (
         <div>
-          <label>
-            <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showMapsMenu')} checked={!!this.game.state.showMapsMenu} />
-            Maps...
-          </label>
-          <label>
-            <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showTokensMenu')} checked={!!this.game.state.showTokensMenu} />
-            Toks...
-          </label>
-          <button onClick={this.game.fogReset.bind(this.game)}>Reset Fog</button>
-          <button onClick={this.reset.bind(this)}>RESET</button>
-          <input onChange={this.handleText.bind(this, 'fogOpacity')} value={this.game.state.opacity} size="2" placeholder="fog" />
-          {this.renderEditControls()}
-          <input onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
+          <div>
+            <label>
+              <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showMapsMenu')} checked={!!this.game.state.showMapsMenu} />
+              Maps...
+            </label>
+            <label>
+              <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showTokensMenu')} checked={!!this.game.state.showTokensMenu} />
+              Toks...
+            </label>
+            <button onClick={this.game.fogReset.bind(this.game)}>Reset Fog</button>
+            <button onClick={this.reset.bind(this)}>RESET</button>
+            <input onChange={this.handleText.bind(this, 'fogOpacity')} value={this.game.state.opacity} size="2" placeholder="fog" />
+            {this.renderEditControls()}
+            <input onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
+          </div>
+          {this.renderMaps()}
+          {this.renderTokens()}
         </div>
-        {this.renderMaps()}
-        {this.renderTokens()}
-      </div>
-    )
+      )
+    else
+      return null;
   }
 
   renderEditControls () {
@@ -128,13 +133,13 @@ class ControlPanel extends React.Component {
     if (this.game.state.showTokensMenu)
       return (
         <div id="tokens-cp">
-          <div>Tokens {this.tokensN}</div>
+          <div>Tokens {this.tokensN} {this.game.state.edit} {this.game.state.mapName}</div>
 
           <input onChange={this.handleLocalText.bind(this, 'newTokenName')} value={this.state.newTokenName || ''} placeholder='Token name' />
           <button onClick={this.addToken.bind(this)}>Add token</button>
 
           <ol>
-            { this.tokens.map((token, index) =>
+            { this.game.tokens.map((token, index) =>
               <CpToken
                 key={index}
                 index={index}
@@ -144,6 +149,8 @@ class ControlPanel extends React.Component {
           </ol>
         </div>
       );
+    else
+      return null;
   }
 }
 

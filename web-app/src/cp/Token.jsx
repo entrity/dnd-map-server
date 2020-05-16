@@ -3,19 +3,12 @@ import React from 'react';
 class CpToken extends React.Component {
   constructor (props) {
     super(props);
-    this.state = {
-      name: this.token.name,
-      url: this.token.url,
-      h: this.token.h,
-      w: this.token.w,
-    }
   }
 
-  handleTextBlur (evt) {
-    let token = Object.assign(this.token, this.state);
+  handleTextChange (key, evt) {
+    let token = Object.assign({}, this.token, {[key]: evt.target.value});
     this.props.game.updateToken(token, this.index);
   }
-  handleTextChange (key, evt) { this.state[key] = evt.target.value }
   handleCheckbox (key, evt) {
     let token = Object.assign(this.token);
     token[key] = evt.target.checked;
@@ -38,21 +31,16 @@ class CpToken extends React.Component {
 		return (
 			<li>
         <label>
-          <input type="checkbox" checked={!!this.token.pc} onChange={this.handleCheckbox.bind(this, 'pc')} />
-          PC
+          <input type="checkbox" checked={!!this.token.pc} onChange={this.handleCheckbox.bind(this, 'pc')} /> PC
         </label>
-
         <label>
-          <input type="checkbox" checked={!!this.token.dead} onChange={this.handleCheckbox.bind(this, 'dead')} />
-          Dead
+          <input type="checkbox" checked={!!this.token.dead} onChange={this.handleCheckbox.bind(this, 'dead')} /> Dead
         </label>
 
-				<input size="10" placeholder="name" onBlur={this.handleTextBlur.bind(this)} onChange={this.handleTextChange.bind(this, 'name')} value={this.state.name||''} />
-				<input size="10" placeholder="url" onBlur={this.handleTextBlur.bind(this)} onChange={this.handleTextChange.bind(this, 'url')} value={this.state.url||''} />
-        height
-        <input size="2" placeholder="height" onBlur={this.handleTextBlur.bind(this)} onChange={this.handleTextChange.bind(this, 'height')} value={this.state.h||''} />
-        width
-        <input size="2" placeholder="width" onBlur={this.handleTextBlur.bind(this)} onChange={this.handleTextChange.bind(this, 'width')} value={this.state.w||''} />
+				<input size="10" placeholder="name" onChange={this.handleTextChange.bind(this, 'name')} value={this.token.name||''} />
+				<input size="10" placeholder="url" onChange={this.handleTextChange.bind(this, 'url')} value={this.token.url||''} />
+        height <input size="2" placeholder="height" onChange={this.handleTextChange.bind(this, 'height')} value={this.token.h||''} />
+        width <input size="2" placeholder="width" onChange={this.handleTextChange.bind(this, 'width')} value={this.token.w||''} />
         
 				<button onClick={this.delete.bind(this)}>Delete</button>
 			</li>
