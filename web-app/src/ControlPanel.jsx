@@ -60,21 +60,41 @@ class ControlPanel extends React.Component {
     if (this.game.state.showHud && this.game.isHost)
       return (
         <div>
-          <div>
-            <label>
-              <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showMapsMenu')} checked={!!this.game.state.showMapsMenu} />
-              Maps...
-            </label>
-            <label>
-              <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showTokensMenu')} checked={!!this.game.state.showTokensMenu} />
-              Toks...
-            </label>
-            <button onClick={this.game.fogReset.bind(this.game)}>Reset Fog</button>
-            <button onClick={this.reset.bind(this)}>RESET</button>
-            <input onChange={this.handleText.bind(this, 'fogOpacity')} value={this.game.state.opacity} size="2" placeholder="fog" />
-            {this.renderEditControls()}
-            <input onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
-          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Subs</th>
+                <th>Fog</th>
+                <th>Tools</th>
+                <th>RESET</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <label>
+                    <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showMapsMenu')} checked={!!this.game.state.showMapsMenu} />
+                    Maps...
+                  </label>
+                  <label>
+                    <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showTokensMenu')} checked={!!this.game.state.showTokensMenu} />
+                    Toks...
+                  </label>
+                </td>
+                <td>
+                  {this.renderEditControls()}
+                </td>
+                <td>
+                  <button onClick={this.game.fogReset.bind(this.game)}>Reset Fog</button>
+                  <input onChange={this.handleText.bind(this, 'fogOpacity')} value={this.game.state.opacity} size="2" placeholder="fog" />
+                  <input onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
+                </td>
+                <td>
+                  <button onClick={this.reset.bind(this)}>RESET</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
           {this.renderMaps()}
           {this.renderTokens()}
         </div>
@@ -95,11 +115,11 @@ class ControlPanel extends React.Component {
       return (
         <span>
           <label>
-            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'fog')} />
+            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'fog')} checked={this.game.state.tool == 'fog'} />
             fog
           </label>
           <label>
-            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'move')} />
+            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'move')} checked={this.game.state.tool == 'move'} />
             move
           </label>
         </span>

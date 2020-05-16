@@ -33,12 +33,12 @@ class Token extends React.Component {
   onMouseDown (evt) {
     if (!this.canGrab) return evt;
     this.game.selectToken(this.props.index);
-    this.myRef.current.addEventListener('mousemove', this.onDrag);
+    document.addEventListener('mousemove', this.onDrag);
     this.startX = evt.pageX - evt.target.offsetLeft;
     this.startY = evt.pageY - evt.target.offsetTop;
   }
   onMouseUp (evt) {
-    this.myRef.current.removeEventListener('mousemove', this.onDrag);
+    document.removeEventListener('mousemove', this.onDrag);
   }
   get canGrab () { return this.token.pc || this.game.isHost }
 

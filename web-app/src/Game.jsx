@@ -26,7 +26,7 @@ class Game extends React.Component {
 	get fog () { return this.map ? this.map.fog : null }
   get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
 	/* Selected token */
-	get token () { return this.tokens && this.selectedTokenIndex && this.tokens[this.selectedTokenIndex] }
+	get token () { return this.tokens && !isNaN(this.state.selectedTokenIndex) && this.tokens[this.state.selectedTokenIndex] }
 	get tokens () { return this.map ? this.map.tokens : null }
 
 	constructor (props) {
@@ -68,23 +68,46 @@ class Game extends React.Component {
 			this.setState({showMapsMenu: false});
 			this.setState({showTokensMenu: false});
 		}));
+		window.document.addEventListener('keydown', this.onKeydown.bind(this));
 		window.document.addEventListener('keypress', this.onKeypress.bind(this));
+		window.document.addEventListener('mousemove', this.onMousemove.bind(this));
 		this.loadMap(); /* load default map */
 		this.loadLocalStorage(); /* load map from storage, if any */
 	}
 
+	onKeydown (evt) {
+		if (this.token) {
+			let token = deepCopy(this.token);
+			switch (evt.keyCode) {
+				case 37: /* left */ token.x -= 10; break;
+				case 38: /* up */ token.y -= 10; break;
+				case 39: /* right */ token.x += 10; break;
+				case 40: /* down */ token.y += 10; break;
+				default: return;
+			}
+			evt.preventDefault();
+			this.updateToken(token);
+		}
+	}
+
 	onKeypress (evt) {
-		if (evt.target.tagName === 'INPUT') return evt;
+		if (!this.isHost) return evt;
+		if (evt.target.tagName === 'INPUT' && evt.target.type !== 'text')
+			return evt;
 		function toggleSub (key) {
 			let nextState = !(this.state.showHud && this.state[key]);
 			this.setState({[key]: nextState, showHud: true});
 		}
 		switch(evt.code) {
 			case 'KeyH': this.setState({showHud: !this.state.showHud}); break;
+			case 'KeyG': this.setState({tool: 'fog'}); break;
 			case 'KeyM': toggleSub.bind(this)('showMapsMenu'); break;
 			case 'KeyT': toggleSub.bind(this)('showTokensMenu'); break;
+			case 'KeyV': this.setState({tool: 'move'}); break;
+			default: return
 		}
 	}
+	onMousemove (evt) { this.setState({curX: evt.offsetX, curY: evt.offsetY}) }
 
 	setUpWebsocket () {
 		/* Define websockets callbacks */
@@ -97,7 +120,7 @@ class Game extends React.Component {
 		this.ws.onclose = () => {
 			console.log('closed');
 		}
-		setInterval( _ => { this.ws.send( Math.random() ) }, 2000 )
+		// setInterval( _ => { this.ws.send( Math.random() ) }, 2000 )
 	}
 
 	loadLocalStorage () {
@@ -113,6 +136,7 @@ class Game extends React.Component {
 			});
 			if (!state.mapName || !state.pristine[state.mapName])
 				state.mapName = Object.keys(state.pristine)[0];
+			state.radius = JSON.parse(state.radius) || 33;
 			this.setState(state, this.loadMap.bind(this));
 		} catch (ex) {
 			console.error(ex);
