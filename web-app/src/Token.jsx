@@ -31,6 +31,7 @@ class Token extends React.Component {
     this.game.updateToken(obj);
   }
   onMouseDown (evt) {
+    if (!this.canGrab) return evt;
     this.game.selectToken(this.props.index);
     this.myRef.current.addEventListener('mousemove', this.onDrag);
     this.startX = evt.pageX - evt.target.offsetLeft;
@@ -39,12 +40,14 @@ class Token extends React.Component {
   onMouseUp (evt) {
     this.myRef.current.removeEventListener('mousemove', this.onDrag);
   }
+  get canGrab () { return this.token.pc || this.game.isHost }
 
   render () {
     let klass = [
       this.props.selected ? 'selected' : '',
       this.token.pc ? 'pc' : '',
-      'token'
+      this.canGrab ? 'grabbable' : '',
+      'token',
     ].join(' ');
     let imgKlass = [
       this.token.dead ? 'dead' : '',

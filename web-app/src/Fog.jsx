@@ -19,7 +19,6 @@ function resetFog () {
 	let context = getContext();
 	if (!context) return;
 	getFog().style.border = '3px dashed red'
-	getFog().style.opacity = 0.75;
 	context.globalCompositeOperation = 'destination-over';
 	context.fillStyle = 'black';
 	context.fillRect(0, 0, 9999, 9999);

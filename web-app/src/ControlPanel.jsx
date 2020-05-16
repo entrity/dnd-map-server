@@ -57,7 +57,7 @@ class ControlPanel extends React.Component {
   }
 
   render () {
-    if (this.game.state.showHud)
+    if (this.game.state.showHud && this.game.isHost)
       return (
         <div>
           <div>

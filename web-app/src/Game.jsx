@@ -9,6 +9,8 @@ function deepCopy (argument) { return argument === undefined ? null : JSON.parse
 class Game extends React.Component {
 	ws = new WebSocket('ws://localhost:8000/');
 
+	/* Is the current user a dm or a player? */
+	get isHost () { return /host=/.test(window.location.href) }
 	/* Selected map (for selected `edit`) */
 	get map () {
 		if (!this.state.edit || !this.state.mapName || !this.state[this.state.edit]) return
@@ -22,13 +24,13 @@ class Game extends React.Component {
 			return Object.keys(this.pristine||{}).find(key => { return typeof key === 'string'});
 	}
 	get fog () { return this.map ? this.map.fog : null }
+  get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
 	/* Selected token */
 	get token () { return this.tokens && this.selectedTokenIndex && this.tokens[this.selectedTokenIndex] }
 	get tokens () { return this.map ? this.map.tokens : null }
 
 	constructor (props) {
 		super(props);
-		this.isHost = !!props.host;
 		this.mapCanvasRef = React.createRef();
 		let tokens = [
 			{name: 'bar', pc: 0},
@@ -56,7 +58,6 @@ class Game extends React.Component {
 			mapName: 'default',
 			snapshots: {}, // non-pristine maps
 		};
-		console.log('maps', this.state.edit, this.maps)
 	}
 
 	componentDidMount () {
@@ -259,7 +260,7 @@ class Game extends React.Component {
 			<div id="wrapper" className={this.state.edit}>
  				<canvas id="canvas-map" ref={this.mapCanvasRef} />
  				{this.renderTokens()}
-				<canvas id="canvas-fog" className="passthrough" style={{opacity: this.state.fogOpacity}} />
+				<canvas id="canvas-fog" className="passthrough" style={{opacity: this.fogOpacity}} />
 				<canvas id="indicator" />
 				{this.renderOverlay()}
 				<div id="control-panel"><ControlPanel game={this} /></div>

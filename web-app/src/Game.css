@@ -31,7 +31,7 @@ canvas {
 }
 #canvas-fog {
 	z-index: 3;
-	
+	opacity: 1;
 }
 #indicator {
 	z-index: 10;
@@ -54,6 +54,8 @@ canvas {
 div.token {
 	position: absolute;
 	pointer-events: all;
+}
+div.token.grabbable {
 	cursor: grab;
 }
 img.token {
