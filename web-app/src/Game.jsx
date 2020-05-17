@@ -48,7 +48,7 @@ class Game extends React.Component {
 		};
 		this.state = {
 			room: window.location.pathname,
-			username: navigator.userAgent,
+			username: this.isHost ? 'DM' : navigator.userAgent,
 			radius: 55,
 			fogOpacity: 0.85,
 			tool: 'move',
@@ -61,6 +61,7 @@ class Game extends React.Component {
 			showMapsMenu: false,
 			showTokensMenu: false,
 			mapName: 'default',
+			cursors: {},
 			snapshots: {}, // non-pristine maps
 		};
 		this.state.websocket = new GameSocket(this);
@@ -114,9 +115,18 @@ class Game extends React.Component {
 	}
 
 	onMousemove (evt, noEmit) {
-		this.setState({curX: evt.offsetX, curY: evt.offsetY});
-		if (!noEmit && this.state.name)
-			this.state.websocket.sendCur(evt.offsetX, evt.offsetY, this.state.name);
+		if (!this.isHost || this.state.shareCursor)
+			this.state.websocket.sendCur(evt.pageX, evt.pageY, this.state.name);
+	}
+
+	updateCur (x, y, username) {
+		let cursors = deepCopy(this.state.cursors||{});
+		cursors[username] = {x: x, y: y, date: new Date()};
+		let tooOld = new Date(new Date() - 1000); // after 2 sec, expire the cursor
+		Object.keys(cursors).forEach(key => {
+			if (cursors[key].date < tooOld) delete cursors[key];
+		});
+		this.setState({cursors: cursors});
 	}
 
 	loadLocalStorage () {
@@ -160,6 +170,13 @@ class Game extends React.Component {
 			if (game.state[key]) data[key] = game.state[key];
 		})
 		return JSON.stringify(Object.assign(data, additionalAttrs));
+	}
+
+	nameChange (oldName, newName) {
+		let cursors = deepCopy(this.state.cursors||{});
+		cursors[newName] = cursors[oldName];
+		delete cursors[oldName];
+		this.setState({cursors: cursors});
 	}
 
 	fogReset (opts) {
@@ -282,6 +299,17 @@ class Game extends React.Component {
 		);
 	}
 
+	renderCursors () {
+		if (this.state.cursors)
+			return (
+				Object.keys(this.state.cursors).map((key, index) => {
+					let cur = this.state.cursors[key];
+					let lbl = key.substr(0, 10);
+					return ( <span key={index} className="cursor" style={{left: cur.x, top: cur.y}}>&#x1f5e1;<br/>{lbl}</span> )
+				})
+			);
+	}
+
 	renderOverlay () {
 		if (this.state.tool === 'fog')
 			return (<Overlay game={this} />);
@@ -293,6 +321,7 @@ class Game extends React.Component {
  				<canvas id="canvas-map" ref={this.mapCanvasRef} />
  				{this.renderTokens()}
 				<canvas id="canvas-fog" className="passthrough" style={{opacity: this.fogOpacity}} />
+				{this.renderCursors()}
 				<canvas id="indicator" />
 				{this.renderOverlay()}
 				<div id="control-panel"><ControlPanel game={this} /></div>

@@ -17,7 +17,11 @@ class ControlPanel extends React.Component {
   get tokensN () { return this.tokens && this.tokens.length }
 
   handleLocalText (key, evt) { this.setState({ [key]: evt.target.value.trim() })}
-
+  handleNameChange (evt) {
+    if (this.game.state.websocket)
+      this.game.state.websocket.sendChn(this.game.state.username, evt.target.value);
+    this.handleText('username', evt);
+  }
   handleCheckbox (key, evt) { this.game.setState({ [key]: evt.target.checked }) }
   handleText (key, evt) { this.game.setState({[key]: evt.target.value}) }
   setTool (tool) { this.game.setState({tool: tool}) }
@@ -42,14 +46,14 @@ class ControlPanel extends React.Component {
 
   addToken () {
     let name = this.state.newTokenName && this.state.newTokenName.trim();
-    if (!name && !name.length) return;
+    if (!name || !name.length) return;
     let tokens = deepCopy(this.tokens);
     tokens.push({name: name});
     console.log('Adding token', name, tokens)
     this.game.updateMap({tokens: tokens});
   }
 
-  toggleHud () { this.game.setState({showHud: true}) }
+  toggleHud (value) { this.game.setState({showHud: value}) }
 
   reset () {
     if (window.confirm('Delete local storage?')) {
@@ -65,25 +69,20 @@ class ControlPanel extends React.Component {
     if (this.game.state.showHud && this.game.isHost)
       return (
         <div>
-          <table>
-            <thead>
-              <tr>
-                <th>Subs</th>
-                <th>Fog</th>
-                <th>Tools</th>
-                <th>Other</th>
-              </tr>
-            </thead>
+          <table rules="cols">
             <tbody>
               <tr>
                 <td>
-                  <label>
-                    <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showMapsMenu')} checked={!!this.game.state.showMapsMenu} />
-                    Maps...
+                  <label title="show maps menu">
+                    <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showMapsMenu')} checked={!!this.game.state.showMapsMenu} />&#x1f5fa;
                   </label>
-                  <label>
-                    <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showTokensMenu')} checked={!!this.game.state.showTokensMenu} />
-                    Toks...
+                  <label title="show tokens menu">
+                    <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showTokensMenu')} checked={!!this.game.state.showTokensMenu} />&#x2657;
+                  </label>
+                </td>
+                <td>
+                  <label title="share cursor">
+                    <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'shareCursor')} checked={!!this.game.state.shareCursor} />&#x1f5e1;
                   </label>
                 </td>
                 <td>
@@ -108,13 +107,14 @@ class ControlPanel extends React.Component {
       )
     else if (this.game.state.showHud)
       return (<div>
+        <button title="hide" onClick={this.toggleHud.bind(this, false)}>&#x1F611;</button>
         <label>Name</label>
-        <input placeholder="Name" value={this.game.state.username||''} onChange={this.handleText.bind(this, 'username')} />
-        <button title="request refresh from peer" onClick={this.requestRefresh.bind(this)}>&#11147;</button>
+        <input placeholder="Name" value={this.game.state.username||''} onChange={this.handleNameChange.bind(this)} />
+        <button title="request refresh from peer" onClick={this.requestRefresh.bind(this)}>&#x1F4AB;&#x1F9DA;&#x1F9D9;</button>
       </div>);
     else
       return (<div>
-        <button onClick={this.toggleHud.bind(this)} style={{opacity: 0.3}}>HUD</button>
+        <button onClick={this.toggleHud.bind(this, true)} style={{opacity: 0.3}}>&#x1F644;</button>
       </div>);
   }
 
@@ -129,13 +129,11 @@ class ControlPanel extends React.Component {
     default:
       return (
         <span>
-          <label>
-            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'fog')} checked={this.game.state.tool === 'fog'} />
-            fog
+          <label title="'Fog' tool">
+            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'fog')} checked={this.game.state.tool === 'fog'} />&#x26c5;
           </label>
-          <label>
-            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'move')} checked={this.game.state.tool === 'move'} />
-            move
+          <label title="'Move' tool">
+            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'move')} checked={this.game.state.tool === 'move'} />&#x1f91a;
           </label>
         </span>
       );

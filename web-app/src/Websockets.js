@@ -38,20 +38,27 @@ class GameSocket {
 	}
 
 	/* Send message to server*/
-	send (data) { this.ws ? this.ws.send(JSON.stringify(data)) : console.error('no websock') }
+	send (data) {
+		if (this.ws && this.ws.readyState === 1)
+			this.ws.send(JSON.stringify(data));
+		else
+			console.error('no websock');
+	}
 	/* Receive message from server */
 	receive (evt) {
 		let data = JSON.parse(evt.data);
 		if (data.typ) this[data.typ](data, evt.data);
 	}
 
+	/* Change username */
+	chn (opts) { this.game.nameChange(opts.old, opts.new) }
+	sendChn (oldName, newName) { this.send({typ: 'chn', old: oldName, new: newName}) }
 	/* Move cursor */
 	cur (opts) {
-console.log('cur', opts) // todo
-		this.game.updateCur(opts.x, opts.y, opts.name, true) }
-	sendCur (x, y) {
-console.log('sendcur') // todo 
-		this.send({typ: 'cur', x: x, y: y, name: this.game.state.username}) }
+		if (opts.name !== this.game.state.username)
+			this.game.updateCur(opts.x, opts.y, opts.name, true)
+	}
+	sendCur (x, y) { this.send({typ: 'cur', x: x, y: y, name: this.game.state.username}) }
 	/* Erase fog */
 	fog (opts) { this.game.fogErase(opts.x, opts.y, opts.rad, true) }
 	sendFog (x, y, radius) { this.send({typ: 'fog', x: x, y: y, rad: radius}) }
@@ -70,6 +77,7 @@ console.log('sendcur') // todo
 		if (from === this.game.state.username) return null;
 		if (to && to !== this.game.state.username) return null;
 		let json = JSON.stringify(opts);
+		console.log(typ, from, to, data)
 		if (this.game.state.lastRefresh === json) return null;
 		this.game.fromJson(json);
 	}

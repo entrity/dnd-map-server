@@ -46,11 +46,15 @@ class CpMap extends React.Component {
     if (window.confirm('Overwrite snapshot?'))
       this.game.setState({edit: 'snapshots'}, () => {
         this.game.loadMap(this.name, 'snapshots', true);
+        if (this.game.isHost && this.state.websocket.ws.readyState === 1)
+          this.state.websocket.sendRef();
       });
   }
   loadSnapshots (evt) {
     this.game.setState({edit: 'snapshots'}, () => {
       this.game.loadMap(this.name, 'snapshots');
+      if (this.game.isHost && this.state.websocket.ws.readyState === 1)
+        this.state.websocket.sendRef();
     });
   }
 

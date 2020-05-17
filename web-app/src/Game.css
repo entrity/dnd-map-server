@@ -5,8 +5,6 @@
 #wrapper {
 	position: relative;
 }
-#wrapper.pristine {
-}
 
 canvas, #control-panel {
 	top: 0;
@@ -41,6 +39,13 @@ canvas {
 	background: rgba(0,255,0, 0.1);
 	box-shadow: inset 0px 0px 40px 20px blue;
 	box-sizing: border-box;
+}
+.cursor {
+	z-index: 5;
+	font-size: '88pt';
+	pointer-events: none;
+	position: absolute;
+	text-shadow: 1px 1px white;
 }
 #overlay {
 	z-index: 11;
