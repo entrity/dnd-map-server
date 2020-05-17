@@ -48,11 +48,18 @@ canvas {
 	z-index: var(--z-indicator);
 	pointer-events: none;
 }
+#fog-placeholder {
+	position: fixed;
+	width: 100%; height: 100%;
+	background: #457;
+	z-index: var(--z-fog);
+}
 .pristine #indicator {
 	background: rgba(0,255,0, 0.1);
 	box-shadow: inset 0px 0px 40px 20px blue;
 	box-sizing: border-box;
 }
+.gone { display: none; }
 .cursor {
 	z-index: var(--z-cursors);
 	font-size: '88pt';

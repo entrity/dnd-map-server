@@ -77,8 +77,10 @@ class Game extends React.Component {
 		window.document.addEventListener('keydown', this.onKeydown.bind(this));
 		window.document.addEventListener('keypress', this.onKeypress.bind(this));
 		window.document.addEventListener('mousemove', this.onMousemove.bind(this));
-		this.loadMap(); /* load default map */
-		this.loadLocalStorage(); /* load map from storage, if any */
+		this.setState({fogLoaded: false}, () => {
+			this.loadMap(); /* load default map */
+			this.loadLocalStorage(); /* load map from storage, if any */
+		});
 	}
 
 	onKeydown (evt) {
@@ -141,7 +143,7 @@ class Game extends React.Component {
 	saveLocalStorage () { localStorage.setItem(this.state.room, this.toJson()) }
 
 	fromJson (json) {
-		let state = {};
+		let state = {fogLoaded: false};
 		try {
 			let data = JSON.parse(json);
 			['pristine', 'snapshots'].forEach(key => {
@@ -207,7 +209,7 @@ class Game extends React.Component {
 			console.error('Attempted to load non-existant map', mapName);
 			return null;
 		}
-		let state = { mapName: mapName, edit: edit };
+		let state = { mapName: mapName, edit: edit, fogLoaded: false };
 		/* Overwrite pristine using snapshot */
 		if (opts.forceCopy || !this.state.snapshots[mapName]) {
 			let snapshots = deepCopy(this.state.snapshots);
@@ -234,18 +236,21 @@ class Game extends React.Component {
 
 	drawMap () {
 		if (!this.map || !this.map.url) return;
-		let map = this.map;
-		let img = new Image();
-		const ctx = this.mapCanvasRef.current.getContext('2d');
-		img.onload = () => {
-			this.resizeCanvases(img.width, img.height);
-			ctx.drawImage(img, 0, 0);
-			for (let key in map.fog) {
-				let [x, y] = key.split(',');
-				fog.erase(x, y, map.fog[key]);
+		this.setState({fogLoaded: false}, () => {
+			let map = this.map;
+			let img = new Image();
+			const ctx = this.mapCanvasRef.current.getContext('2d');
+			img.onload = () => {
+				this.resizeCanvases(img.width, img.height);
+				ctx.drawImage(img, 0, 0);
+				for (let key in map.fog) {
+					let [x, y] = key.split(',');
+					fog.erase(x, y, map.fog[key]);
+				}
+				this.setState({fogLoaded: true});
 			}
-		}
-		img.src = this.map.url;
+			img.src = this.map.url;
+		});
 	}
 
 	getImg (callback) {
@@ -323,9 +328,10 @@ class Game extends React.Component {
 	render () {
 		return (
 			<div id="wrapper" className={this.state.edit}>
- 				<canvas id="canvas-map" ref={this.mapCanvasRef} />
- 				{this.renderTokens()}
+				<canvas id="canvas-map" ref={this.mapCanvasRef} />
+				<div id="fog-placeholder" className={this.state.fogLoaded ? 'gone' : ''}>{/* Just blacks out screen while waiting for fog to be drawn so that Tokens and Map are not revealed */}</div>
 				<canvas id="canvas-fog" className="passthrough" style={{opacity: this.fogOpacity}} />
+				{this.renderTokens()}
 				{this.renderCursors()}
 				<canvas id="indicator" />
 				{this.renderOverlay()}
