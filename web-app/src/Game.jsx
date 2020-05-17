@@ -15,8 +15,8 @@ class Game extends React.Component {
 	}
 	/* Selected map (for selected `edit`) */
 	get map () {
-		if (!this.state.edit || !this.state.mapName || !this.state[this.state.edit]) return null;
-		return this.state[this.state.edit][this.state.mapName];
+		if (!this.state.edit || !this.mapName || !this.state[this.state.edit]) return null;
+		return this.state[this.state.edit][this.mapName];
 	}
 	get maps () { return this.state.edit && this.state[this.state.edit] }
 	get mapName () {
@@ -29,8 +29,7 @@ class Game extends React.Component {
 	get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
 	/* Selected token */
 	get token () { return this.tokens && !isNaN(this.state.selectedTokenIndex) && this.tokens[this.state.selectedTokenIndex] }
-	get tokens () { return this.map ? this.map.tokens : [] }
-
+	get tokens () { return this.map ? this.map.tokens || [] : [] }
 
 	constructor (props) {
 		super(props);
@@ -49,6 +48,7 @@ class Game extends React.Component {
 		};
 		this.state = {
 			room: window.location.pathname,
+			username: navigator.userAgent,
 			radius: 55,
 			fogOpacity: 0.85,
 			tool: 'move',
@@ -57,8 +57,9 @@ class Game extends React.Component {
 				default: defaultMap,
 				kiwi: {url: '/kiwi.jpeg'},
 			},
-			showHud: false,
-			showTokensMenu: true,
+			showHud: true,
+			showMapsMenu: false,
+			showTokensMenu: false,
 			mapName: 'default',
 			snapshots: {}, // non-pristine maps
 		};
@@ -149,7 +150,7 @@ class Game extends React.Component {
 		}
 	}
 
-	toJson () {
+	toJson (additionalAttrs) {
 		let data = {};
 		let game = this;
 		['mapName', 'radius'].forEach(key => {
@@ -158,7 +159,7 @@ class Game extends React.Component {
 		['pristine', 'snapshots'].forEach(key => {
 			if (game.state[key]) data[key] = game.state[key];
 		})
-		return JSON.stringify(data);
+		return JSON.stringify(Object.assign(data, additionalAttrs));
 	}
 
 	fogReset (opts) {

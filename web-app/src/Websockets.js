@@ -22,7 +22,6 @@ class GameSocket {
 
 	addCallbacks () {
 		let self = this;
-		let ws = this.ws;
 		/* Connection callback */
 		this.ws.addEventListener('open', () => {
 			console.log('WebSocket opened');
@@ -43,12 +42,16 @@ class GameSocket {
 	/* Receive message from server */
 	receive (evt) {
 		let data = JSON.parse(evt.data);
-		if (data.typ) this[data.typ](data);
+		if (data.typ) this[data.typ](data, evt.data);
 	}
 
 	/* Move cursor */
-	cur (opts) { this.game.updateCur(opts.x, opts.y, opts.name, true) }
-	sendCur (x, y, name) { this.send({typ: 'cur', x: x, y: y, name: name}) }
+	cur (opts) {
+console.log('cur', opts) // todo
+		this.game.updateCur(opts.x, opts.y, opts.name, true) }
+	sendCur (x, y) {
+console.log('sendcur') // todo 
+		this.send({typ: 'cur', x: x, y: y, name: this.game.state.username}) }
 	/* Erase fog */
 	fog (opts) { this.game.fogErase(opts.x, opts.y, opts.rad, true) }
 	sendFog (x, y, radius) { this.send({typ: 'fog', x: x, y: y, rad: radius}) }
@@ -62,15 +65,24 @@ class GameSocket {
 	}
 	sendTok (idx, token) { this.send(Object.assign({typ: 'tok', idx: idx}, token)) }
 	/* Full refresh */
-	ref (opts) {
-
+	ref (opts, raw) {
+		let {from, typ, to, ...data} = opts;
+		if (from === this.game.state.username) return null;
+		if (to && to !== this.game.state.username) return null;
+		let json = JSON.stringify(opts);
+		if (this.game.state.lastRefresh === json) return null;
+		this.game.fromJson(json);
 	}
-	sendRef () {}
-	/* Request refresh */
-	req (opts) {
-
+	/* Push refresh */
+	sendRef (additionalAttrs) {
+		let attrs = Object.assign({typ: 'ref', from: this.game.state.username}, additionalAttrs);
+		let json = this.game.toJson(attrs);
+		this.send(JSON.parse(json));
 	}
-	sendReq () {}
+	/* Receive request refresh. Push refresh in response */
+	req (opts) { if (this.game.isHost) this.sendRef({to: opts.from}) }
+	/* Send refresh request */
+	sendReq () { this.send({typ: 'req', from: this.game.state.username}) }
 }
 
 export default GameSocket;

@@ -49,12 +49,17 @@ class ControlPanel extends React.Component {
     this.game.updateMap({tokens: tokens});
   }
 
+  toggleHud () { this.game.setState({showHud: true}) }
+
   reset () {
     if (window.confirm('Delete local storage?')) {
       localStorage.clear();
       window.location.reload();
     }
   }
+
+  requestRefresh () { this.game.state.websocket.sendReq() }
+  pushRefresh () { this.game.state.websocket.sendRef() }
 
   render () {
     if (this.game.state.showHud && this.game.isHost)
@@ -66,7 +71,7 @@ class ControlPanel extends React.Component {
                 <th>Subs</th>
                 <th>Fog</th>
                 <th>Tools</th>
-                <th>RESET</th>
+                <th>Other</th>
               </tr>
             </thead>
             <tbody>
@@ -90,7 +95,9 @@ class ControlPanel extends React.Component {
                   <input onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
                 </td>
                 <td>
-                  <button onClick={this.reset.bind(this)}>RESET</button>
+                  <button title="refresh from localStorage" onClick={this.reset.bind(this)}>&#127744;</button>
+                  <button title="push current state to all peers" onClick={this.pushRefresh.bind(this)}>&#11145;</button>
+                  <input placeholder="Name" size="6" value={this.game.state.username||''} onChange={this.handleText.bind(this, 'username')} />
                 </td>
               </tr>
             </tbody>
@@ -99,8 +106,16 @@ class ControlPanel extends React.Component {
           {this.renderTokens()}
         </div>
       )
+    else if (this.game.state.showHud)
+      return (<div>
+        <label>Name</label>
+        <input placeholder="Name" value={this.game.state.username||''} onChange={this.handleText.bind(this, 'username')} />
+        <button title="request refresh from peer" onClick={this.requestRefresh.bind(this)}>&#11147;</button>
+      </div>);
     else
-      return null;
+      return (<div>
+        <button onClick={this.toggleHud.bind(this)} style={{opacity: 0.3}}>HUD</button>
+      </div>);
   }
 
   renderEditControls () {
