@@ -8,11 +8,13 @@ import GameSocket from './Websockets.js'
 function deepCopy (argument) { return argument === undefined ? null : JSON.parse(JSON.stringify(argument)) }
 
 class Game extends React.Component {
-	/* Is the current user a dm or a player? */
-	get isHost () {
+	get params () {
 		if (!window.params) window.params = new URLSearchParams(window.location.href.replace(/.*\?/, ''));
-		return window.params.get('host') && (window.params.get('host') !== '0');
+		return window.params;
 	}
+	/* Is the current user a dm or a player? */
+	get isHost () { return this.params.get('host') && (this.params.get('host') !== '0') }
+	get room () { return this.params.get('room') || 'defaultRoom' }
 	/* Selected map (for selected `edit`) */
 	get map () {
 		if (!this.state.edit || !this.mapName || !this.state[this.state.edit]) return null;
@@ -47,7 +49,6 @@ class Game extends React.Component {
 			fog: {},
 		};
 		this.state = {
-			room: window.location.pathname,
 			username: this.isHost ? 'DM' : navigator.userAgent,
 			radius: 55,
 			fogOpacity: 0.85,
@@ -133,14 +134,14 @@ class Game extends React.Component {
 	}
 
 	loadLocalStorage () {
-		let json = localStorage.getItem(this.state.room);
+		let json = localStorage.getItem(this.room);
 		if (!this.fromJson(json)) {
-			console.error(`Bad localStorage load for ${this.state.room}. Clearing.`);
-			localStorage.removeItem(this.state.room);
+			console.error(`Bad localStorage load for ${this.room}. Clearing.`);
+			localStorage.removeItem(this.room);
 		}
 	}
 
-	saveLocalStorage () { localStorage.setItem(this.state.room, this.toJson()) }
+	saveLocalStorage () { localStorage.setItem(this.room, this.toJson()) }
 
 	fromJson (json) {
 		let state = {fogLoaded: false};

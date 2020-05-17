@@ -13,10 +13,10 @@ class GameSocket {
 	get game () { return this.state.game }
 
 	setup () {
-		this.host = window.location.host.replace(/:\d+$/, '');
-		this.path = this.game.state.room || this.host.pathname;
-		console.log('Trying to establish websocket connection');
-		this.ws = new WebSocket(`ws://${this.host}:8000${this.path}`);
+		let host = window.location.host.replace(/:\d+$/, '');
+		let room = this.game.room || host.pathname;
+		console.log('Trying to establish websocket connection', host, room);
+		this.ws = new WebSocket(`ws://${host}:8000/${room}`);
 		this.addCallbacks();
 	}
 
