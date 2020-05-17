@@ -5,21 +5,21 @@ class CpToken extends React.Component {
     super(props);
   }
 
-  handleTextChange (key, evt) {
-    let token = Object.assign({}, this.token, {[key]: evt.target.value});
-    this.props.game.updateToken(token, this.index);
+  handleChange (key, value) {
+    let token = Object.assign({}, this.token, {[key]: value});
+    this.game.updateToken(token, this.index);
   }
-  handleCheckbox (key, evt) {
-    let token = Object.assign(this.token);
-    token[key] = evt.target.checked;
-    this.props.game.updateToken(token, this.index);
-  }
+  handleTextChange (key, evt) { this.handleChange(key, evt.target.value) }
+  handleNumChange (key, evt, defaultVal) { this.handleChange(key, parseInt(evt.target.value) || defaultVal) }
+  handleCheckbox (key, evt) { this.handleChange(key, evt.target.checked) }
 
   get token () { return this.props.token }
   get index () { return this.props.index }
   get game () { return this.props.game }
   get name () { return this.token.name }
   get url () { return this.token.url }
+
+  select () { this.game.selectToken(this.props.index) }
 
 	delete () {
     let tokens = JSON.parse(JSON.stringify(this.game.tokens));
@@ -39,13 +39,27 @@ class CpToken extends React.Component {
 
 				<input size="10" placeholder="name" onChange={this.handleTextChange.bind(this, 'name')} value={this.token.name||''} />
 				<input size="10" placeholder="url" onChange={this.handleTextChange.bind(this, 'url')} value={this.token.url||''} />
-        height <input size="2" placeholder="height" onChange={this.handleTextChange.bind(this, 'height')} value={this.token.h||''} />
-        width <input size="2" placeholder="width" onChange={this.handleTextChange.bind(this, 'width')} value={this.token.w||''} />
+
+        <span role="img" arial-label="height">&#x2195;</span>
+        <input size="1" placeholder="h" onChange={this.handleNumChange.bind(this, 'h')} value={this.token.h||''} />
+        <span role="img" arial-label="width">&#x2194;</span>
+        <input size="1" placeholder="w" onChange={this.handleNumChange.bind(this, 'w')} value={this.token.w||''} />
         
-				<button onClick={this.delete.bind(this)}>Delete</button>
+        x <input size="1" placeholder="x" onChange={this.handleNumChange.bind(this, 'x', 0)} value={this.token.x||''} />
+        y <input size="1" placeholder="y" onChange={this.handleNumChange.bind(this, 'y', 0)} value={this.token.y||''} />
+        {this.renderSelectButton()}
+				<button onClick={this.delete.bind(this)}><span role="img" arial-label="Delete">&#x1f5d1;</span></button>
 			</li>
 		);
 	}
+
+  renderSelectButton () {
+    if (this.token !== this.game.token) {
+      return (
+        <button onClick={this.select.bind(this)}><span role="img" arial-label="Select token">&#x1F5e1;</span></button>
+      )
+    }
+  }
 }
 
 export default CpToken;

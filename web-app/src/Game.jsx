@@ -85,6 +85,7 @@ class Game extends React.Component {
 		if (this.token) {
 			let token = deepCopy(this.token);
 			switch (evt.keyCode) {
+				case 27: /* escape */ this.selectToken(); return;
 				case 37: /* left */ token.x -= 10; break;
 				case 38: /* up */ token.y -= 10; break;
 				case 39: /* right */ token.x += 10; break;

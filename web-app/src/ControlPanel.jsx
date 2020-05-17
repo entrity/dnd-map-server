@@ -101,6 +101,7 @@ class ControlPanel extends React.Component {
               </tr>
             </tbody>
           </table>
+          {this.renderSelectedToken()}
           {this.renderMaps()}
           {this.renderTokens()}
         </div>
@@ -111,11 +112,27 @@ class ControlPanel extends React.Component {
         <label>Name</label>
         <input placeholder="Name" value={this.game.state.username||''} onChange={this.handleNameChange.bind(this)} />
         <button title="request refresh from peer" onClick={this.requestRefresh.bind(this)}>&#x1F4AB;&#x1F9DA;&#x1F9D9;</button>
+        {this.renderSelectedToken()}
       </div>);
     else
       return (<div>
         <button onClick={this.toggleHud.bind(this, true)} style={{opacity: 0.3}}>&#x1F644;</button>
+        {this.renderSelectedToken()}
       </div>);
+  }
+
+  renderSelectedToken () {
+    if (this.game.token) {
+      let token = this.game.token
+      return (
+        <div>
+          <CpToken
+          index={this.game.state.selectedTokenIndex}
+          token={token}
+          game={this.game}/>
+        </div>
+      )
+    }
   }
 
   renderEditControls () {
@@ -163,7 +180,7 @@ class ControlPanel extends React.Component {
   }
 
   renderTokens () {
-    if (this.game.state.showTokensMenu)
+    if (this.game.state.showTokensMenu && !this.game.token)
       return (
         <div id="tokens-cp">
           <div>Tokens {this.tokensN} {this.game.state.edit} {this.game.state.mapName}</div>

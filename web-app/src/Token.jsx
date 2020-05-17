@@ -33,11 +33,13 @@ class Token extends React.Component {
   onMouseDown (evt) {
     if (!this.canGrab) return evt;
     this.game.selectToken(this.props.index);
+    document.addEventListener('mouseout', this.onMouseUp);
     document.addEventListener('mousemove', this.onDrag);
     this.startX = evt.pageX - evt.target.offsetLeft;
     this.startY = evt.pageY - evt.target.offsetTop;
   }
   onMouseUp (evt) {
+    document.removeEventListener('mouseout', this.onMouseUp);
     document.removeEventListener('mousemove', this.onDrag);
   }
   get canGrab () { return this.token.pc || this.game.isHost }
@@ -45,7 +47,7 @@ class Token extends React.Component {
   render () {
     let klass = [
       this.props.selected ? 'selected' : '',
-      this.token.pc ? 'pc' : '',
+      this.token.pc ? 'pc' : 'npc',
       this.canGrab ? 'grabbable' : '',
       'token',
     ].join(' ');
@@ -58,6 +60,7 @@ class Token extends React.Component {
         className={klass}
         style={{top: this.token.y, left: this.token.x}}>
         <img
+          style={{height: this.token.h, width: this.token.w}}
           src={this.token.url}
           alt={this.token.name}
           className={imgKlass} />

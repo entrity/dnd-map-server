@@ -1,3 +1,16 @@
+:root {
+	--z-map: 1;
+	--z-npc-div: 15;
+	--z-npc-lbl: 16;
+	--z-fog: 20;
+	--z-pc-img: 25;
+	--z-pc-lbl: 26;
+	--z-overlay: 30;
+	--z-indicator: 30;
+	--z-cursors: 40;
+	--z-cp: 100;
+}
+
 #root {
 	position: relative;
 }
@@ -14,7 +27,7 @@ canvas, #control-panel {
 #control-panel {
 	position: fixed;
 	opacity: 1;
-	z-index: 100;
+	z-index: var(--z-cp);
 	background: rgba(255,255,255,0.5);
 }
 
@@ -25,14 +38,14 @@ canvas {
 	pointer-events: none;
 }
 #canvas-map {
-	z-index: 1;
+	z-index: var(--z-map);
 }
 #canvas-fog {
-	z-index: 3;
+	z-index: var(--z-fog);
 	opacity: 1;
 }
 #indicator {
-	z-index: 10;
+	z-index: var(--z-indicator);
 	pointer-events: none;
 }
 .pristine #indicator {
@@ -41,32 +54,24 @@ canvas {
 	box-sizing: border-box;
 }
 .cursor {
-	z-index: 5;
+	z-index: var(--z-cursors);
 	font-size: '88pt';
 	pointer-events: none;
 	position: absolute;
 	text-shadow: 1px 1px white;
 }
-#overlay {
-	z-index: 11;
-}
-.token.pc {
-	z-index: 4;
-}
-.token {
-	z-index: 2;
-}
+#overlay { z-index: var(--z-overlay); }
+div.token.pc {z-index: var(--z-pc-img); }
+div.token.pc .label { z-index: var(--z-pc-lbl) }
+div.token.npc { z-index: var(--z-npc-div); }
+div.token.npc .label { z-index: var(--z-npc-lbl) }
 div.token {
 	position: absolute;
 	pointer-events: all;
 }
-div.token.grabbable {
-	cursor: grab;
-}
-img.token {
-	position: relative;
-}
-img.token.dead {
+div.token.grabbable { cursor: grab; }
+div.token img { position: relative; }
+div.token img.dead {
 	filter: invert();
 	-webkit-transform: scaleY(-1);
 	transform: scaleY(-1);
