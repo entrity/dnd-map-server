@@ -1,54 +1,44 @@
-// const express = require("express");
-// const http = require("http");
-// const socketIo = require("socket.io");
+/* cf.
+https://github.com/websockets/ws/tree/master/examples
+https://github.com/theturtle32/WebSocket-Node/blob/master/docs/index.md
+*/
 
-// const port = process.env.PORT || 4001;
-// const index = require("./routes/index");
-
-// const app = express();
-// app.use(index);
-
-// const server = http.createServer(app);
-
-// const io = socketIo(server); // < Interesting!
-
-// const getApiAndEmit = "TODO";
-// console.log('end')
-console.log('started')
 const webSocketsServerPort = 8000;
-const webSocketServer = require('websocket').server;
+const webSocketServer = require('ws').Server;
 const http = require('http');
-// Spinning the http server and the websocket server.
-const server = http.createServer();
-server.listen(webSocketsServerPort);
-const wsServer = new webSocketServer({
-  httpServer: server
+const httpServer = http.createServer();
+const ws = new webSocketServer({
+  server: httpServer,
+  autoAcceptConnections: true,
 });
 
-// I'm maintaining all active connections in this object
-const clients = {};
-
-// This code generates unique userid for everyuser.
-const getUniqueID = () => {
-  const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-  return s4() + s4() + '-' + s4();
-};
-
-wsServer.on('request', function(request) {
-  var userID = getUniqueID();
-  console.log((new Date()) + ' Recieved a new connection from origin ' + request.origin + '.');
-  // You can rewrite this part of the code to accept only the requests from allowed origin
-  const connection = request.accept(null, request.origin);
-  clients[userID] = connection;
-  console.log('connected: ' + userID + ' in ' + Object.getOwnPropertyNames(clients))
+ws.on('connection', function (connection, request) {
+  connection.on('message', onMessage);
+  connection.room = request.url;
+  console.log('connected', request.url);
 });
-console.log('started...')
 
-function recur () {
-	Object.keys(clients).forEach((userId) => {
-		let conn = clients[userId];
-		conn.send('{"foo":9}');
-	});
+
+function isExpired (obj) {
+  if (!obj) return true;
+  let then = obj.createdAt;
+  if (!then) return true;
+  let now = new Date();
+  return now - then > 1000 * 60 * 60 * 24;
 }
 
-setInterval(recur, 15000);
+function onMessage (msg) {
+  /* Forward message to all other clients (for this room) */
+  if (JSON.parse(msg).typ) {
+    ws.clients.forEach(conn => {
+      if (conn.room !== this.room) return;
+      if (conn !== this) { conn.send(msg) }
+    });
+  /* Assign key-val to this connection (e.g. isHost) */
+  } else {
+    Object.assign(this, msg);
+  }
+}
+
+console.log('starting...')
+httpServer.listen(webSocketsServerPort);

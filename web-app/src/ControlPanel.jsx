@@ -115,11 +115,11 @@ class ControlPanel extends React.Component {
       return (
         <span>
           <label>
-            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'fog')} checked={this.game.state.tool == 'fog'} />
+            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'fog')} checked={this.game.state.tool === 'fog'} />
             fog
           </label>
           <label>
-            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'move')} checked={this.game.state.tool == 'move'} />
+            <input type="radio" name="tool" onChange={this.setTool.bind(this, 'move')} checked={this.game.state.tool === 'move'} />
             move
           </label>
         </span>

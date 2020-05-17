@@ -3,17 +3,19 @@ import Overlay from './Overlay.jsx';
 import Token from './Token.jsx';
 import ControlPanel from './ControlPanel.jsx';
 import { fog } from './Fog.jsx';
+import GameSocket from './Websockets.js'
 
 function deepCopy (argument) { return argument === undefined ? null : JSON.parse(JSON.stringify(argument)) }
 
 class Game extends React.Component {
-	ws = new WebSocket('ws://localhost:8000/');
-
 	/* Is the current user a dm or a player? */
-	get isHost () { return this.state.query.get('host') && (this.state.query.get('host') !== '0') }
+	get isHost () {
+		if (!window.params) window.params = new URLSearchParams(window.location.href.replace(/.*\?/, ''));
+		return window.params.get('host') && (window.params.get('host') !== '0');
+	}
 	/* Selected map (for selected `edit`) */
 	get map () {
-		if (!this.state.edit || !this.state.mapName || !this.state[this.state.edit]) return
+		if (!this.state.edit || !this.state.mapName || !this.state[this.state.edit]) return null;
 		return this.state[this.state.edit][this.state.mapName];
 	}
 	get maps () { return this.state.edit && this.state[this.state.edit] }
@@ -24,10 +26,11 @@ class Game extends React.Component {
 			return Object.keys(this.pristine||{}).find(key => { return typeof key === 'string'});
 	}
 	get fog () { return this.map ? this.map.fog : null }
-  get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
+	get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
 	/* Selected token */
 	get token () { return this.tokens && !isNaN(this.state.selectedTokenIndex) && this.tokens[this.state.selectedTokenIndex] }
 	get tokens () { return this.map ? this.map.tokens : [] }
+
 
 	constructor (props) {
 		super(props);
@@ -45,7 +48,7 @@ class Game extends React.Component {
 			fog: {},
 		};
 		this.state = {
-			query: new URLSearchParams(window.location.href.replace(/.*\?/, '')),
+			room: window.location.pathname,
 			radius: 55,
 			fogOpacity: 0.85,
 			tool: 'move',
@@ -54,15 +57,15 @@ class Game extends React.Component {
 				default: defaultMap,
 				kiwi: {url: '/kiwi.jpeg'},
 			},
-			showHud: true,
+			showHud: false,
 			showTokensMenu: true,
 			mapName: 'default',
 			snapshots: {}, // non-pristine maps
 		};
+		this.state.websocket = new GameSocket(this);
 	}
 
 	componentDidMount () {
-		this.setUpWebsocket();
 		window.addEventListener('resize', this.drawMap.bind(this));
 		this.mapCanvasRef.current.addEventListener('click', ((evt) => {
 			this.selectToken(null)
@@ -108,72 +111,74 @@ class Game extends React.Component {
 			default: return
 		}
 	}
-	onMousemove (evt) { this.setState({curX: evt.offsetX, curY: evt.offsetY}) }
 
-	setUpWebsocket () {
-		/* Define websockets callbacks */
-		this.ws.onopen = () => {
-			console.log('opened WebSocket');
-		}
-		this.ws.onmessage = evt => {
-			console.log('got msg', evt.data);
-		}
-		this.ws.onclose = () => {
-			console.log('closed');
-		}
-		// setInterval( _ => { this.ws.send( Math.random() ) }, 2000 )
+	onMousemove (evt, noEmit) {
+		this.setState({curX: evt.offsetX, curY: evt.offsetY});
+		if (!noEmit && this.state.name)
+			this.state.websocket.sendCur(evt.offsetX, evt.offsetY, this.state.name);
 	}
 
 	loadLocalStorage () {
-		try {
-			let state = {};
-			['pristine', 'snapshots'].forEach(key => {
-				let json = localStorage.getItem(key);
-				let obj = json ? JSON.parse(json) : {};
-				state[key] = Object.assign(deepCopy(this.state[key]), obj);
-			});
-			['mapName', 'radius'].forEach(key => {
-				state[key] = localStorage.getItem(key);
-			});
-			if (!state.mapName || !state.pristine[state.mapName])
-				state.mapName = Object.keys(state.pristine)[0];
-			state.radius = JSON.parse(state.radius) || 33;
-			this.setState(state, this.loadMap.bind(this));
-		} catch (ex) {
-			console.error(ex);
-			['pristine', 'snapshots'].forEach(key => {
-				let json = localStorage.getItem(key);
-				console.warn('Loaded localStorage', key, json);
-			});
-			console.warn('clearing local storage')
-			localStorage.clear();
+		let json = localStorage.getItem(this.state.room);
+		if (!this.fromJson(json)) {
+			console.error(`Bad localStorage load for ${this.state.room}. Clearing.`);
+			localStorage.removeItem(this.state.room);
 		}
 	}
 
-	saveLocalStorage () {
-		if (this.state.pristine)
-			localStorage.setItem('pristine', JSON.stringify(this.state.pristine));
-		if (this.state.snapshots)
-			localStorage.setItem('snapshots', JSON.stringify(this.state.snapshots));
-		localStorage.setItem('mapName', this.state.mapName);
-		localStorage.setItem('radius', this.state.radius);
+	saveLocalStorage () { localStorage.setItem(this.state.room, this.toJson()) }
+
+	fromJson (json) {
+		let state = {};
+		try {
+			let data = JSON.parse(json);
+			['pristine', 'snapshots'].forEach(key => {
+				state[key] = data[key] || {};
+			});
+			['mapName', 'radius'].forEach(key => {
+				state[key] = data[key];
+			});
+			if (!state.mapName || !state.pristine[state.mapName])
+				state.mapName = Object.keys(state.pristine)[0];
+			if (!state.radius) state.radius = 33;
+			this.setState(state, this.loadMap.bind(this));
+			return true;
+		} catch (ex) {
+			console.error(ex);
+			return false;
+		}
 	}
 
-	fogReset () {
+	toJson () {
+		let data = {};
+		let game = this;
+		['mapName', 'radius'].forEach(key => {
+			data[key] = game.state[key];
+		});
+		['pristine', 'snapshots'].forEach(key => {
+			if (game.state[key]) data[key] = game.state[key];
+		})
+		return JSON.stringify(data);
+	}
+
+	fogReset (opts) {
 		fog.reset();
 		this.updateMap({fog: {}});
+		if (!opts || !opts.noEmit) this.state.websocket.sendFre();
 	}
 
-	fogErase (x, y) {
-		let modulus = Math.max(3, Math.round(this.state.radius / 5));
+	fogErase (x, y, radius, noEmit) {
+		if (!radius) radius = this.state.radius;
+		let modulus = Math.max(3, Math.round(radius / 5));
 		x -= x % modulus;
 		y -= y % modulus;
 		let dots = Object.assign({}, this.map.fog||{});
 		if (Array.isArray(dots)) dots = {};
 		let key = [x,y].join(',');
-		dots[key] = Math.max(this.state.radius, dots[key] || 0);
-		fog.erase(x, y, this.state.radius);
+		dots[key] = Math.max(radius, dots[key] || 0);
+		fog.erase(x, y, radius);
 		this.updateMap({fog: dots});
+		if (!noEmit) this.state.websocket.sendFog(x, y, radius);
 	}
 
 	loadMap (mapName, edit='snapshots', forceCopy=false) {
@@ -241,11 +246,12 @@ class Game extends React.Component {
 	handleCheckbox (key, evt) { this.setState({[key]: evt.target.checked}) }
 
 	selectToken (index) { this.setState({selectedTokenIndex: index}) }
-	updateToken (attrs, index) {
+	updateToken (attrs, index, noEmit) {
 		if (isNaN(index)) index = this.state.selectedTokenIndex;
 		let tokens = deepCopy(this.tokens);
 		tokens[index] = Object.assign(deepCopy(tokens[index])||{}, attrs);
 		this.updateMap({ tokens: tokens });
+		if (!noEmit) this.state.websocket.sendTok(index, tokens[index]);
 	}
 	deleteToken (index) {
 		if (index === undefined) {

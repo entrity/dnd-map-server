@@ -11,7 +11,7 @@ class CpMap extends React.Component {
     }
   }
 
-  handleTextChange (key, evt) { this.state[key] = evt.target.value }
+  handleTextChange (key, evt) { this.setState({[key]: evt.target.value}) }
   handleTextBlur (evt) {
     let pristine = deepCopy(this.game.state.pristine);
     let snapshots = deepCopy(this.game.state.snapshots);
