@@ -51,7 +51,7 @@ class Game extends React.Component {
 		this.state = {
 			username: this.isHost ? 'DM' : navigator.userAgent,
 			radius: 55,
-			fogOpacity: 0.85,
+			fogOpacity: 0.7,
 			tool: 'move',
 			edit: 'pristine',
 			pristine: {

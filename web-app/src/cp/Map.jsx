@@ -24,7 +24,9 @@ class CpMap extends React.Component {
     pristine[newName] = map;
     snapshots[newName] = snapshots[oldName];
     delete snapshots[oldName];
-    this.game.setState({pristine: pristine, snapshots: snapshots});
+    this.game.setState({pristine: pristine, snapshots: snapshots}, () => {
+      this.game.saveLocalStorage();
+    });
   }
 
   get map () { return this.props.map }
