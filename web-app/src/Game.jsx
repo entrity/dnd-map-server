@@ -270,6 +270,8 @@ class Game extends React.Component {
 	updateToken (attrs, index, noEmit) {
 		if (isNaN(index)) index = this.state.selectedTokenIndex;
 		let tokens = deepCopy(this.tokens);
+		['x', 'y'].forEach(key => { attrs[key] = parseInt(attrs[key]) || 0 });
+		['h', 'w'].forEach(key => { attrs[key] = parseInt(attrs[key]) || undefined });
 		tokens[index] = Object.assign(deepCopy(tokens[index])||{}, attrs);
 		this.updateMap({ tokens: tokens });
 		if (!noEmit) this.state.websocket.sendTok(index, tokens[index]);

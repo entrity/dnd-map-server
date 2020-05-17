@@ -10,7 +10,7 @@ class CpToken extends React.Component {
     this.game.updateToken(token, this.index);
   }
   handleTextChange (key, evt) { this.handleChange(key, evt.target.value) }
-  handleNumChange (key, evt, defaultVal) { this.handleChange(key, parseInt(evt.target.value) || defaultVal) }
+  handleNumChange (key, defaultVal, evt) { this.handleChange(key, parseInt(evt.target.value) || defaultVal) }
   handleCheckbox (key, evt) { this.handleChange(key, evt.target.checked) }
 
   get token () { return this.props.token }
@@ -41,9 +41,9 @@ class CpToken extends React.Component {
 				<input size="10" placeholder="url" onChange={this.handleTextChange.bind(this, 'url')} value={this.token.url||''} />
 
         <span role="img" arial-label="height">&#x2195;</span>
-        <input size="1" placeholder="h" onChange={this.handleNumChange.bind(this, 'h')} value={this.token.h||''} />
+        <input size="1" placeholder="h" onChange={this.handleNumChange.bind(this, 'h', undefined)} value={this.token.h||''} />
         <span role="img" arial-label="width">&#x2194;</span>
-        <input size="1" placeholder="w" onChange={this.handleNumChange.bind(this, 'w')} value={this.token.w||''} />
+        <input size="1" placeholder="w" onChange={this.handleNumChange.bind(this, 'w', undefined)} value={this.token.w||''} />
         
         x <input size="1" placeholder="x" onChange={this.handleNumChange.bind(this, 'x', 0)} value={this.token.x||''} />
         y <input size="1" placeholder="y" onChange={this.handleNumChange.bind(this, 'y', 0)} value={this.token.y||''} />
