@@ -15,7 +15,6 @@ const ws = new webSocketServer({
 ws.on('connection', function (connection, request) {
   connection.on('message', onMessage);
   connection.room = request.url;
-  console.log('connected', request.url);
 });
 
 
