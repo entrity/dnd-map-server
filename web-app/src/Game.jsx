@@ -199,7 +199,8 @@ class Game extends React.Component {
 		if (!noEmit) this.state.websocket.sendFog(x, y, radius);
 	}
 
-	loadMap (mapName, edit='snapshots', forceCopy=false) {
+	loadMap (mapName, edit='snapshots', opts) {
+		if (!opts) opts = {}
 		if (!mapName) mapName = this.mapName;
 		if (!this.state.pristine[mapName]) {
 			console.error('Attempted to load non-existant map', mapName);
@@ -207,7 +208,7 @@ class Game extends React.Component {
 		}
 		let state = { mapName: mapName, edit: edit };
 		/* Overwrite pristine using snapshot */
-		if (forceCopy || !this.state.snapshots[mapName]) {
+		if (opts.forceCopy || !this.state.snapshots[mapName]) {
 			let snapshots = deepCopy(this.state.snapshots);
 			snapshots[mapName] = deepCopy(this.state.pristine[mapName]);
 			state.snapshots = snapshots;
@@ -215,6 +216,7 @@ class Game extends React.Component {
 		this.setState(state, ((arg) => {
 			this.drawMap();
 			this.saveLocalStorage();
+			if (opts.cb) opts.cb();
 		}));
 	}
 

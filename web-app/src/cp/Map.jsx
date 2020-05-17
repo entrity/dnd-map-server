@@ -31,6 +31,7 @@ class CpMap extends React.Component {
   get maps () { return this.game.state.pristine }
   get name () { return this.props.name }
   get game () { return this.props.game }
+  get websocket () { return this.game && this.game.state.websocket }
 
 	delete () {
     let maps = deepCopy(this.maps);
@@ -45,16 +46,18 @@ class CpMap extends React.Component {
   loadPristine (evt) {
     if (window.confirm('Overwrite snapshot?'))
       this.game.setState({edit: 'snapshots'}, () => {
-        this.game.loadMap(this.name, 'snapshots', true);
-        if (this.game.isHost && this.state.websocket.ws.readyState === 1)
-          this.state.websocket.sendRef();
+        let opts = {forceCopy: true};
+        if (this.game.isHost && this.websocket)
+          opts.cb = this.websocket.sendRef.bind(this.websocket);
+        this.game.loadMap(this.name, 'snapshots', opts);
       });
   }
   loadSnapshots (evt) {
     this.game.setState({edit: 'snapshots'}, () => {
-      this.game.loadMap(this.name, 'snapshots');
-      if (this.game.isHost && this.state.websocket.ws.readyState === 1)
-        this.state.websocket.sendRef();
+      let opts = {}
+      if (this.game.isHost && this.websocket)
+        opts.cb = this.websocket.sendRef.bind(this.websocket);
+      this.game.loadMap(this.name, 'snapshots', opts);
     });
   }
 
