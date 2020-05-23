@@ -337,18 +337,24 @@ class Game extends React.Component {
 	}
 
 	render () {
-		return (
-			<div id="wrapper" className={this.state.edit}>
-				<canvas id="canvas-map" ref={this.mapCanvasRef} />
-				<div id="fog-placeholder" className={this.state.fogLoaded ? 'gone' : ''}>{/* Just blacks out screen while waiting for fog to be drawn so that Tokens and Map are not revealed */}</div>
-				<canvas id="canvas-fog" className="passthrough" style={{opacity: this.fogOpacity}} />
-				{this.renderTokens()}
-				{this.renderCursors()}
-				<canvas id="indicator" />
-				{this.renderOverlay()}
-				<div id="control-panel"><ControlPanel game={this} /></div>
-			</div>
-		);
+		try {
+			return (
+				<div id="wrapper" className={this.state.edit}>
+					<canvas id="canvas-map" ref={this.mapCanvasRef} />
+					<div id="fog-placeholder" className={this.state.fogLoaded ? 'gone' : ''}>{/* Just blacks out screen while waiting for fog to be drawn so that Tokens and Map are not revealed */}</div>
+					<canvas id="canvas-fog" className="passthrough" style={{opacity: this.fogOpacity}} />
+					{this.renderTokens()}
+					{this.renderCursors()}
+					<canvas id="indicator" />
+					{this.renderOverlay()}
+					<div id="control-panel"><ControlPanel game={this} /></div>
+				</div>
+			);
+		} catch (ex) {
+			console.error(ex);
+			console.error('Exception in `render`. Clearing localStorage...');
+			localStorage.removeItem(this.room);
+		}
 	}
 
 	resizeCanvases (w, h) {
