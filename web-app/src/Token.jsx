@@ -13,10 +13,7 @@ class Token extends React.Component {
   componentDidMount () {
     const node = this.myRef.current;    
     node.addEventListener('click', this.onClick.bind(this));
-    node.addEventListener('mouseover', this.onMouseUp.bind(this));
-    node.addEventListener('mouseout', this.onMouseUp.bind(this));
     node.addEventListener('mousedown', this.onMouseDown.bind(this));
-    node.addEventListener('mouseup', this.onMouseUp.bind(this));
   }
 
   onClick (evt) {
@@ -33,12 +30,14 @@ class Token extends React.Component {
   onMouseDown (evt) {
     if (!this.canGrab) return evt;
     this.game.selectToken(this.props.index);
+    document.addEventListener('mouseup', this.onMouseUp);
     document.addEventListener('mouseout', this.onMouseUp);
     document.addEventListener('mousemove', this.onDrag);
     this.startX = evt.pageX - evt.target.offsetLeft;
     this.startY = evt.pageY - evt.target.offsetTop;
   }
   onMouseUp (evt) {
+    document.removeEventListener('mouseup', this.onMouseUp);
     document.removeEventListener('mouseout', this.onMouseUp);
     document.removeEventListener('mousemove', this.onDrag);
   }
