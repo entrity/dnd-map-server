@@ -35,6 +35,7 @@ class Game extends React.Component {
 
 	constructor (props) {
 		super(props);
+		window.game = this;
 		this.mapCanvasRef = React.createRef();
 		let tokens = [
 			{name: 'bar', pc: 0},
@@ -109,11 +110,20 @@ class Game extends React.Component {
 			this.setState({[key]: nextState, showHud: true});
 		}
 		switch(evt.code) {
+			case 'KeyC':
+				if (evt.shiftKey)
+					navigator.clipboard.writeText(this.toJson());
+				break;
 			case 'KeyH': this.setState({showHud: !this.state.showHud}); break;
 			case 'KeyG': this.setState({tool: 'fog'}); break;
 			case 'KeyM': toggleSub.bind(this)('showMapsMenu'); break;
 			case 'KeyT': toggleSub.bind(this)('showTokensMenu'); break;
-			case 'KeyV': this.setState({tool: 'move'}); break;
+			case 'KeyV':
+				if (evt.shiftKey)
+					navigator.clipboard.writeText(this.toJson());
+				else
+					this.setState({tool: 'move'});
+				break;
 			default: return
 		}
 	}
