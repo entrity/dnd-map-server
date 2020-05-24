@@ -68,7 +68,7 @@ class ControlPanel extends React.Component {
     if (this.game.state.showHud && this.game.isHost)
       return (
         <div>
-          <table rules="cols">
+          <table rules="cols" id="main-cp">
             <tbody>
               <tr>
                 <td>
@@ -88,9 +88,9 @@ class ControlPanel extends React.Component {
                   {this.renderEditControls()}
                 </td>
                 <td>
-                  <button onClick={this.game.fogReset.bind(this.game)}>Reset Fog</button>
-                  <input type="range" min="0" max="1" step="0.05" onChange={this.handleText.bind(this, 'fogOpacity')} value={this.game.state.opacity} size="2" placeholder="fog" />
-                  <input onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
+                  <button onClick={this.game.fogReset.bind(this.game)} title="reset fog"><span role="img" aria-label="reset fog">&#x2601;</span></button>
+                  <input type="number" min="0" max="1" step="0.05" onChange={this.handleText.bind(this, 'fogOpacity')} value={this.game.state.opacity} size="2" placeholder="fog" />
+                  <input type="number" min="1" step="5" onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
                 </td>
                 <td>
                   <button title="refresh from localStorage" onClick={this.reset.bind(this)}><span role="img" aria-label="resfresh from local storage">&#127744;</span></button>
@@ -122,12 +122,13 @@ class ControlPanel extends React.Component {
   }
 
   renderSelectedTokens () {
-		let tokens = this.game.tokens.filter(tok => this.game.isTokenOnMap(tok) && tok.isSelected);
-		return (
-			<div>{tokens.map(token =>
-				<CpToken token={token} game={this.game}/>
-			)}</div>
-		)
+    return (
+      <div>{this.game.tokens.map((token, idx) =>
+        (token.isSelected && this.game.isTokenOnMap(token))
+        ? <CpToken key={idx} index={idx} token={token} game={this.game}/>
+        : null
+      )}</div>
+    )
   }
 
   renderEditControls () {
@@ -185,11 +186,7 @@ class ControlPanel extends React.Component {
 
           <ol>
             { this.game.tokens.map((token, index) =>
-              <CpToken
-                key={index}
-                index={index}
-                token={token}
-                game={this.game} />
+              <CpToken key={index} index={index} token={token} game={this.game} />
             )}
           </ol>
         </div>

@@ -1,5 +1,3 @@
-import { deepCopy } from './Helper.js';
-
 class ControlsMethods {
 	addControlsCallbacks () {
 		window.addEventListener('keydown', this.onKeydown.bind(this));
@@ -86,7 +84,7 @@ class ControlsMethods {
 		if (evt.buttons & 1) {
 			this.mouseDownX = evt.pageX;
 			this.mouseDownY = evt.pageY;
-			if (!evt.target.classList.contains('token'))
+			if (evt.target.id === 'canvas-map')
 				this.selectToken(-1, evt);
 			if (this.state.tool === 'fog') this.fogErase(evt.pageX, evt.pageY);
 		}

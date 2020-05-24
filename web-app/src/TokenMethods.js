@@ -1,15 +1,6 @@
 import { deepCopy } from './Helper.js';
 
 /*
-	updateToken (attrs, index, noEmit) {
-		if (isNaN(index)) index = this.state.selectedTokenIndex;
-		let tokens = deepCopy(this.tokens);
-		['x', 'y'].forEach(key => { attrs[key] = parseInt(attrs[key]) || 0 });
-		['h', 'w'].forEach(key => { attrs[key] = parseInt(attrs[key]) || undefined });
-		tokens[index] = Object.assign(deepCopy(tokens[index])||{}, attrs);
-		this.updateMap({ tokens: tokens });
-		if (!noEmit) this.state.websocket.sendTok(index, tokens[index]);
-	}
 	deleteToken (index) {
 		if (index === undefined) {
 			index = this.selectedTokenIndex;
@@ -19,6 +10,7 @@ import { deepCopy } from './Helper.js';
 		this.updateMap({tokens: tokens});
 	}
 */
+
 class TokenMethods {
 	dragSelectedTokens (evt) {
 		let tokens = deepCopy(this.tokens);
@@ -34,7 +26,31 @@ class TokenMethods {
 	}
 
 	isTokenOnMap (token) {
-		return token && this.map && (token.allMaps || token[this.map.name]);
+		return token && this.map && (token.all || token[this.map.name]);
+	}
+
+	loadTokensForMap (mapName, tokens) {
+		tokens.forEach(token => {
+			if (!token.maps) token.maps = {};
+			if (!token.maps[mapName]) token.maps[mapName] = {};
+			['x','y'].forEach(key => {
+				token[key] = token.maps[mapName][key];
+			});
+			['w','h'].forEach(key => {
+				if (token.maps[mapName][key] !== undefined)
+					token[key] = token.maps[mapName][key];
+			});
+		});
+	}
+
+	dumpTokensForMap (mapName, tokens) {
+		tokens.forEach(token => {
+			if (!token.maps) token.maps = {};
+			if (!token.maps[mapName]) token.maps[mapName] = {};
+			['x','y','w','h'].forEach(key => {
+				token.maps[mapName][key] = token[key];
+			});
+		});
 	}
 
 	moveSelectedTokens (evt) {
@@ -42,7 +58,7 @@ class TokenMethods {
 			let tokens = deepCopy(this.tokens);
 			let moveFactor = evt.shiftKey ? 100 : 10;
 			tokens.forEach(token => {
-				if (token.isSelected)
+				if (token.isSelected) {
 					switch (evt.keyCode) {
 						case 27: token.isSelected = false; break; /* escape */
 						case 37: token.x -= moveFactor; break; /* left */
@@ -51,6 +67,7 @@ class TokenMethods {
 						case 40: token.y += moveFactor; break; /* down */
 						default: return;
 					}
+				}
 			});
 			this.updateTokens(tokens);
 			evt.preventDefault();
@@ -85,6 +102,15 @@ class TokenMethods {
 		else
 			select(tokens[index]);
 		this.setState({tokens: tokens});
+	}
+
+	updateToken (attrs, index, noEmit) {
+		let tokens = deepCopy(this.tokens);
+		['x', 'y'].forEach(key => { attrs[key] = parseInt(attrs[key]) || 0 });
+		['h', 'w'].forEach(key => { attrs[key] = parseInt(attrs[key]) || undefined });
+		tokens[index] = Object.assign(deepCopy(tokens[index]), attrs);
+		this.updateTokens(tokens);
+		if (!noEmit) this.state.websocket.sendTok(index, tokens[index]);
 	}
 
 	updateTokens (tokens) {

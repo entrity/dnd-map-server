@@ -16,18 +16,8 @@ class Game extends React.Component {
 	/* Is the current user a dm or a player? */
 	get isHost () { return this.params.get('host') && (this.params.get('host') !== '0') }
 	get room () { return this.params.get('room') || 'defaultRoom' }
-	/* Selected map (for selected `edit`) */
-	get map () {
-		if (!this.state.edit || !this.mapName || !this.state[this.state.edit]) return null;
-		return this.state[this.state.edit][this.mapName];
-	}
-	get maps () { return this.state.edit && this.state[this.state.edit] }
-	get mapName () {
-		if (this.state.mapName && this.state.mapName !== 'undefined')
-			return this.state.mapName;
-		else
-			return Object.keys(this.pristine||{}).find(key => { return typeof key === 'string'});
-	}
+	get map () { return this.state.map }
+	get maps () { return this.state.maps }
 	get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
 	get tokens () { return this.state.tokens }
 
@@ -45,23 +35,22 @@ class Game extends React.Component {
 			url: "/FFtri9T.png",
 			spawnX: 40, spawnY: 80,
 		};
+		let kiwiMap = {
+			name: 'kiwi', url: '/kiwi.jpeg',
+		};
 		this.state = {
 			username: this.isHost ? 'DM' : navigator.userAgent,
 			radius: 55,
 			fogOpacity: 0.7,
-			tool: 'fog',
+			tool: 'move',
 			edit: 'pristine',
-			pristine: {
-				default: defaultMap,
-				kiwi: {url: '/kiwi.jpeg'},
-			},
+			maps: [defaultMap, kiwiMap],
 			tokens: tokens,
 			showHud: true,
 			showMapsMenu: false,
 			showTokensMenu: false,
 			mapName: 'default',
 			cursors: {},
-			snapshots: {}, // non-pristine maps
 		};
 		this.state.websocket = new GameSocket(this);
 		this.extend(TokenMethods);
@@ -96,7 +85,7 @@ class Game extends React.Component {
 		this.setState({fogLoaded: false}, () => {
 			console.log('Attempting to load from localStorage')
 			if (!this.loadLocalStorage()) { /* load map from storage, if any */
-				console.log('Attempting to load defaultMap')
+				console.log('Attempting to load default map')
 				this.loadMap(); /* load default map */
 			}
 		});
@@ -123,23 +112,19 @@ class Game extends React.Component {
 
 	saveLocalStorage (evt) {
 		if (this.state.isInitialLoadFinished)
-			localStorage.setItem(this.room, this.toJson())
+			localStorage.setItem(this.room, this.toJson());
 		else
 			console.error(`saveLocalStorage`, 'init not finished');
 	}
 
 	fromJson (json) {
+		if (!json) return;
 		try {
 			let data = JSON.parse(json);
 			let state = {};
-			['pristine', 'snapshots'].forEach(key => {
-				state[key] = data[key] || {};
-			});
 			['tokens', 'mapName', 'radius'].forEach(key => {
 				state[key] = data[key];
 			});
-			if (!state.mapName || !state.pristine[state.mapName])
-				state.mapName = Object.keys(state.pristine)[0];
 			if (!state.radius) state.radius = 33;
 			this.setState(state, this.loadMap.bind(this));
 			return true;
@@ -155,6 +140,7 @@ class Game extends React.Component {
 		['tokens', 'mapName', 'radius'].forEach(key => {
 			data[key] = game.state[key];
 		});
+		if (this.map) this.dumpTokensForMap(this.map.name, data.tokens);
 		['pristine', 'snapshots'].forEach(key => {
 			if (game.state[key]) data[key] = game.state[key];
 		});
@@ -170,21 +156,21 @@ class Game extends React.Component {
 		this.setState({cursors: cursors});
 	}
 
-	loadMap (mapName, edit='snapshots', opts) {
-		console.log('>>> caled loadMap', mapName, this.mapName, edit)
-		if (!opts) opts = {}
-		if (!mapName) mapName = this.mapName;
-		if (!this.state.pristine[mapName]) {
-			console.error('Attempted to load non-existant map', mapName);
+	loadMap (map, edit='snapshots', opts) {
+		if (!opts) opts = {};
+		if (!map) map = this.maps[0];
+		if (!map) {
+			console.error('Attempted to load non-existant map');
 			return null;
 		}
-		let state = { mapName: mapName, edit: edit, fogLoaded: false };
-		/* Overwrite pristine using snapshot */
-		if (opts.forceCopy || !this.state.snapshots[mapName]) {
-			let snapshots = deepCopy(this.state.snapshots);
-			snapshots[mapName] = deepCopy(this.state.pristine[mapName]);
-			state.snapshots = snapshots;
-		}
+		/* Dump tokens' states */
+		let oldMap = this.state.map;
+		let tokens = deepCopy(this.tokens);
+		if (oldMap && oldMap.name)
+			this.dumpTokensForMap(oldMap.name, tokens);
+		/* Load tokens' states */
+		this.loadTokensForMap(map.name, tokens);
+		let state = { map: map, edit: edit, fogLoaded: false, tokens: tokens };
 		return new Promise(resolve => {
 			this.setState(state, ((arg) => {
 				this.loadFog(this.map && this.map.fogUrl)
@@ -225,14 +211,12 @@ class Game extends React.Component {
 
 	renderTokens () {
 		let game = this;
-		if (this.tokens) return (
-			this.tokens.map((token, index) => {
-				if (token.url)
-					return <Token key={index} index={index} token={token} game={game}
-					/>
-				else
-					return null;
-			})
+		return (
+			this.tokens.map((token, index) => (
+				(token.url && game.isTokenOnMap(token))
+				? <Token key={index} index={index} token={token} game={game}/>
+				: null
+			))
 		);
 	}
 

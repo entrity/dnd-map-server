@@ -1,15 +1,19 @@
 import React from 'react';
-
-function deepCopy (argument) { return JSON.parse(JSON.stringify(argument)) }
+import { deepCopy } from '../Helper.js';
 
 class CpMap extends React.Component {
   constructor (props) {
     super(props);
-    this.state = {
-      name: this.props.name,
-      url: this.map.url,
-    }
+    this.state = {};
   }
+
+  get url () { return this.map.url }
+  get map () { return this.props.map }
+  get maps () { return this.game.state.pristine }
+  get name () { return this.props.name }
+  get game () { return this.props.game }
+  get websocket () { return this.game && this.game.state.websocket }
+
 
   handleTextChange (key, evt) { this.setState({[key]: evt.target.value}) }
   handleTextBlur (evt) {
@@ -29,16 +33,18 @@ class CpMap extends React.Component {
     });
   }
 
-  get map () { return this.props.map }
-  get maps () { return this.game.state.pristine }
-  get name () { return this.props.name }
-  get game () { return this.props.game }
-  get websocket () { return this.game && this.game.state.websocket }
-
-	delete () {
+  delete () {
+    if (window.confirm('Do you want to delete this map?')) {
+      let maps = deepCopy(this.maps);
+      delete maps[this.name];
+      this.game.setState({pristine: maps});
+    }
+  }
+  duplicate () {
     let maps = deepCopy(this.maps);
-    delete maps[this.name];
-    this.game.setState({pristine: maps});
+    let copy = deepCopy(this.map);
+    maps.push(copy);
+    this.game.setState({maps: maps});
   }
   editPristine (evt) {
     this.game.setState({edit: 'pristine', tool: 'move'}, () => {
@@ -63,18 +69,19 @@ class CpMap extends React.Component {
     });
   }
 
-	render () {
-		return (
-			<li>
-				<button onClick={this.editPristine.bind(this)}>Edit Pristine</button>
-				<input size="10" onBlur={this.handleTextBlur.bind(this)} placeholder="name" onChange={this.handleTextChange.bind(this, 'name')} value={this.state.name||''} />
-				<input size="10" onBlur={this.handleTextBlur.bind(this)} placeholder="url" onChange={this.handleTextChange.bind(this, 'url')} value={this.state.url||''} />
-        <button onClick={this.loadPristine.bind(this)}>Load Pristine</button>
-				<button onClick={this.loadSnapshots.bind(this)}>Load Active</button>
-				<button onClick={this.delete.bind(this)}>Delete</button>
-			</li>
-		);
-	}
+  render () {
+    return (
+      <li>
+        <button onClick={this.editPristine.bind(this)}><span aria-label="edit pristine" title="Edit 'pristine' map" role="img">&#x1f4dd;</span></button>
+        <input size="10" onBlur={this.handleTextBlur.bind(this)} placeholder="name" onChange={this.handleTextChange.bind(this, 'name')} value={this.state.name||''} />
+        <input size="10" onBlur={this.handleTextBlur.bind(this)} placeholder="url" onChange={this.handleTextChange.bind(this, 'url')} value={this.state.url||''} />
+        <button onClick={this.loadPristine.bind(this)}><span aria-label="load pristine" title="Load pristine map" role="img">&#x25b6;</span></button>
+        <button onClick={this.loadSnapshots.bind(this)}><span aria-label="load snapshot" title="Load map snapshot" role="img">&#x1f4f7;</span></button>
+        <button onClick={this.duplicate.bind(this)}><span aria-label="Duplicate map" title="Duplicate map" role="img">&#x1f4cb;</span></button>
+        <button onClick={this.delete.bind(this)}><span aria-label="Delete map" title="Delete map" role="img">&#x1f5d1;</span></button>
+      </li>
+    );
+  }
 }
 
 export default CpMap;

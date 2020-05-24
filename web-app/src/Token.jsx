@@ -12,7 +12,7 @@ class Token extends React.Component {
   get token () { return this.props.token }
 
   componentDidMount () {
-    const node = this.myRef.current;    
+    const node = this.myRef.current;
     node.addEventListener('mousedown', this.onMouseDown.bind(this));
   }
 

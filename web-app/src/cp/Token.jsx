@@ -1,10 +1,6 @@
 import React from 'react';
 
 class CpToken extends React.Component {
-  constructor (props) {
-    super(props);
-  }
-
   handleChange (key, value) {
     let token = Object.assign({}, this.token, {[key]: value});
     this.game.updateToken(token, this.index);

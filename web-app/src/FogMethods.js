@@ -14,7 +14,6 @@ class FogMethods {
 
 	fogUrl () { return getFogCanvas().toDataURL('image/webp', 0.25) }
 	loadFog (dataUrl) {
-		console.log('called loadFogUrl', dataUrl && dataUrl.substr(0, 55))
 		let ctx = getFogContext('2d');
 		ctx.globalCompositeOperation = 'destination-over';
 		ctx.fillStyle = 'black';
