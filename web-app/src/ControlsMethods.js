@@ -1,5 +1,25 @@
 function deepCopy (argument) { return argument === undefined ? null : JSON.parse(JSON.stringify(argument)) }
 
+function moveSelectedTokens (game, evt) {
+	if (game.tokens.find(t => t.isSelected)) {
+		let tokens = deepCopy(game.tokens);
+		let moveFactor = evt.shiftKey ? 100 : 10;
+		tokens.forEach(token => {
+			if (token.isSelected)
+				switch (evt.keyCode) {
+					case 27: token.isSelected = false; break; /* escape */
+					case 37: token.x -= moveFactor; break; /* left */
+					case 38: token.y -= moveFactor; break; /* up */
+					case 39: token.x += moveFactor; break; /* right */
+					case 40: token.y += moveFactor; break; /* down */
+					default: return;
+				}
+		});
+		game.setState({tokens: tokens});
+		evt.preventDefault();
+	}
+}
+
 class ControlsMethods {
 	addControlsCallbacks () {
 		window.addEventListener('keydown', this.onKeydown.bind(this));
@@ -20,19 +40,13 @@ class ControlsMethods {
 	}
 
 	onKeydown (evt) {
-		if (this.token) {
-			let token = deepCopy(this.token);
-			let moveFactor = evt.shiftKey ? 40 : 10;
-			switch (evt.keyCode) {
-				case 27: /* escape */ this.selectToken(); return;
-				case 37: /* left */ token.x -= moveFactor; break;
-				case 38: /* up */ token.y -= moveFactor; break;
-				case 39: /* right */ token.x += moveFactor; break;
-				case 40: /* down */ token.y += moveFactor; break;
-				default: return;
-			}
-			evt.preventDefault();
-			this.updateToken(token);
+		switch (evt.keyCode) {
+			case 27:
+			case 37:
+			case 38:
+			case 39:
+			case 40: moveSelectedTokens(this, evt); break;
+			default: return;
 		}
 	}
 
