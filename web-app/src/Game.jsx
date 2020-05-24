@@ -88,12 +88,13 @@ class Game extends React.Component {
 	onKeydown (evt) {
 		if (this.token) {
 			let token = deepCopy(this.token);
+			let moveFactor = evt.shiftKey ? 40 : 10;
 			switch (evt.keyCode) {
 				case 27: /* escape */ this.selectToken(); return;
-				case 37: /* left */ token.x -= 10; break;
-				case 38: /* up */ token.y -= 10; break;
-				case 39: /* right */ token.x += 10; break;
-				case 40: /* down */ token.y += 10; break;
+				case 37: /* left */ token.x -= moveFactor; break;
+				case 38: /* up */ token.y -= moveFactor; break;
+				case 39: /* right */ token.x += moveFactor; break;
+				case 40: /* down */ token.y += moveFactor; break;
 				default: return;
 			}
 			evt.preventDefault();
