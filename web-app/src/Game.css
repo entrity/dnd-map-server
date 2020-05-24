@@ -2,6 +2,7 @@
 	--z-map: 1;
 	--z-npc-div: 15;
 	--z-npc-lbl: 16;
+	--z-fog-placeholder: 19;
 	--z-fog: 20;
 	--z-pc-img: 25;
 	--z-pc-lbl: 26;
@@ -52,7 +53,7 @@ canvas {
 	position: fixed;
 	width: 100%; height: 100%;
 	background: #457;
-	z-index: var(--z-fog);
+	z-index: var(--z-fog-placeholder);
 }
 .pristine #indicator {
 	background: rgba(0,255,0, 0.1);

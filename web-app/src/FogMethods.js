@@ -1,28 +1,46 @@
+
 class FogMethods {
 	fogReset (opts) {
 		resetFog();
-		this.updateMap({fog: {}});
+		this.setState({fogLoaded: true});
 		if (!opts || !opts.noEmit) this.state.websocket.sendFre();
 	}
 
 	fogErase (x, y, radius, noEmit) {
 		if (!radius) radius = this.state.radius;
-		let modulus = Math.max(3, Math.round(radius / 5));
-		x -= x % modulus;
-		y -= y % modulus;
-		let dots = Object.assign({}, this.map.fog||{});
-		if (Array.isArray(dots)) dots = {};
-		let key = [x,y].join(',');
-		dots[key] = Math.max(radius, dots[key] || 0);
 		fogErase(x, y, radius);
-		this.updateMap({fog: dots});
 		if (!noEmit) this.state.websocket.sendFog(x, y, radius);
+	}
+
+	fogUrl () { return getFogCanvas().toDataURL('image/webp', 0.25) }
+	loadFog (dataUrl) {
+		console.log('called loadFogUrl', dataUrl && dataUrl.substr(0, 55))
+		let ctx = getFogContext('2d');
+		ctx.globalCompositeOperation = 'destination-over';
+		ctx.fillStyle = 'black';
+		ctx.fillRect(0, 0, 9999, 9999);
+		return new Promise((resolve, reject) => {
+			if (dataUrl) {
+				let img = new Image();
+				img.onload = () => {
+					ctx.clearRect(0, 0, img.width, img.height);
+					ctx.globalCompositeOperation = 'destination-over';
+					ctx.drawImage(img, 0, 0);
+					this.setState({fogLoaded: true});
+					resolve();
+				}
+				img.src = dataUrl;
+			} else {
+				this.setState({fogLoaded: true});
+				resolve();
+			}
+		});
 	}
 }
 
 /* Legacy */
 function fogErase (x, y, r, r2) {
-	let context = getContext();
+	let context = getFogContext();
 	if (!context) return;
 	context.globalCompositeOperation = 'destination-out';
 	let grad = context.createRadialGradient(x,y,r2||1, x,y,r*0.75);
@@ -32,15 +50,15 @@ function fogErase (x, y, r, r2) {
 	context.fillRect(x-r,y-r,x+r,y+r);
 	context.globalCompositeOperation = 'destination-over';
 }
-function getFog () { return document.getElementById('canvas-fog') }
-function getContext () {
-	let canvas = getFog();
+function getFogCanvas () { return document.getElementById('canvas-fog') }
+function getFogContext () {
+	let canvas = getFogCanvas();
 	return canvas && canvas.getContext('2d');
 }
 function resetFog () {
-	let context = getContext();
+	let context = getFogContext();
 	if (!context) return;
-	getFog().style.border = '3px dashed red'
+	getFogCanvas().style.border = '3px dashed red'
 	context.globalCompositeOperation = 'destination-over';
 	context.fillStyle = 'black';
 	context.fillRect(0, 0, 9999, 9999);

@@ -23,7 +23,7 @@ class Token extends React.Component {
 
   render () {
     let klass = [
-      this.props.selected ? 'selected' : '',
+      this.token.isSelected ? 'selected' : '',
       this.token.pc ? 'pc' : 'npc',
       this.canGrab ? 'grabbable' : '',
       'token',

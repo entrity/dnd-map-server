@@ -90,7 +90,7 @@ class ControlPanel extends React.Component {
                 </td>
                 <td>
                   <button onClick={this.game.fogReset.bind(this.game)}>Reset Fog</button>
-                  <input onChange={this.handleText.bind(this, 'fogOpacity')} value={this.game.state.opacity} size="2" placeholder="fog" />
+                  <input type="range" min="0" max="1" step="0.05" onChange={this.handleText.bind(this, 'fogOpacity')} value={this.game.state.opacity} size="2" placeholder="fog" />
                   <input onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
                 </td>
                 <td>

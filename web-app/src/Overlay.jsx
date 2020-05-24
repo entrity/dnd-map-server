@@ -3,19 +3,18 @@ import React from 'react';
 class Overlay extends React.Component {
   constructor (props) {
     super(props);
-    this.game = this.props.game;
     this.myRef = React.createRef();
   }
+
+  get game () { return this.props.game }
+  get className () { return this.game.state.tool !== 'fog' ? 'gone' : '' }
 
   componentDidMount () {
     const node = this.myRef.current;
     console.log('Overlaid')
     node.width = this.game.state.w;
     node.height = this.game.state.h;
-    node.addEventListener('click', this.onClick.bind(this))
     node.addEventListener('mousemove', this.onMouseMove.bind(this))
-    node.addEventListener('mousedown', this.onMouseDown.bind(this))
-    node.addEventListener('mouseup', this.onMouseUp.bind(this))
   }
 
   onMouseMove (evt) {
@@ -24,12 +23,6 @@ class Overlay extends React.Component {
     this.setPointerOutline();
     if (this.state.clickOn) this.game.fogErase(x, y);
   }
-
-  onMouseUp (evt) { this.setState({ clickOn: false }) }
-
-  onMouseDown (evt) { this.setState({ clickOn: true }) }
-
-  onClick (evt) { this.game.fogErase(evt.offsetX, evt.offsetY) }
 
   setPointerOutline () {
     const node = this.myRef.current;
@@ -44,7 +37,7 @@ class Overlay extends React.Component {
   }
 
   render () {
-    return (<canvas id="overlay" ref={this.myRef} />);
+    return (<canvas id="overlay" ref={this.myRef} className={this.className} />);
   }
 }
 

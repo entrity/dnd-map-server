@@ -28,7 +28,6 @@ class Game extends React.Component {
 		else
 			return Object.keys(this.pristine||{}).find(key => { return typeof key === 'string'});
 	}
-	get fog () { return this.map ? this.map.fog : null }
 	get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
 	get tokens () { return this.state.tokens }
 
@@ -45,13 +44,12 @@ class Game extends React.Component {
 		let defaultMap = {
 			url: "/FFtri9T.png",
 			spawnX: 40, spawnY: 80,
-			fog: {},
 		};
 		this.state = {
 			username: this.isHost ? 'DM' : navigator.userAgent,
 			radius: 55,
 			fogOpacity: 0.7,
-			tool: 'move',
+			tool: 'fog',
 			edit: 'pristine',
 			pristine: {
 				default: defaultMap,
@@ -73,15 +71,21 @@ class Game extends React.Component {
 	/* Helper function for extending other classes */
 	extend (base) {
 		Object.getOwnPropertyNames(base.prototype)
-		.filter(prop => prop != 'constructor')
+		.filter(prop => prop !== 'constructor')
 		.forEach(prop => {
 			Game.prototype[prop] = base.prototype[prop];
 		});
 	}
 
-	componentWillUnmount () { this.removeControlsCallbacks() }
+	componentWillUnmount () {
+		window.removeEventListener('beforeunload', this.saveLocalStorage.bind(this));
+		window.removeEventListener('resize', this.drawMap.bind(this));
+		this.removeControlsCallbacks();
+		this.saveLocalStorage();
+	}
 
 	componentDidMount () {
+		window.addEventListener('beforeunload', this.saveLocalStorage.bind(this));
 		window.addEventListener('resize', this.drawMap.bind(this));
 		this.addControlsCallbacks();
 		this.mapCanvasRef.current.addEventListener('click', ((evt) => {
@@ -89,8 +93,11 @@ class Game extends React.Component {
 			this.setState({showTokensMenu: false});
 		}));
 		this.setState({fogLoaded: false}, () => {
-			this.loadMap(); /* load default map */
-			this.loadLocalStorage(); /* load map from storage, if any */
+			console.log('Attempting to load from localStorage')
+			if (!this.loadLocalStorage()) { /* load map from storage, if any */
+				console.log('Attempting to load defaultMap')
+				this.loadMap(); /* load default map */
+			}
 		});
 	}
 
@@ -156,15 +163,21 @@ class Game extends React.Component {
 		if (!this.fromJson(json)) {
 			console.error(`Bad localStorage load for ${this.room}. Clearing.`);
 			localStorage.removeItem(this.room);
-		}
+			return false;
+		} else return true;
 	}
 
-	saveLocalStorage () { localStorage.setItem(this.room, this.toJson()) }
+	saveLocalStorage (evt) {
+		if (this.state.isInitialLoadFinished)
+			localStorage.setItem(this.room, this.toJson())
+		else
+			console.error(`saveLocalStorage`, 'init not finished');
+	}
 
 	fromJson (json) {
-		let state = {fogLoaded: false};
 		try {
 			let data = JSON.parse(json);
+			let state = {};
 			['pristine', 'snapshots'].forEach(key => {
 				state[key] = data[key] || {};
 			});
@@ -191,6 +204,8 @@ class Game extends React.Component {
 		['pristine', 'snapshots'].forEach(key => {
 			if (game.state[key]) data[key] = game.state[key];
 		})
+		if (data.snapshots && data.mapName && data.snapshots[data.mapName])
+			data.snapshots[data.mapName].fogUrl = this.fogUrl();
 		return JSON.stringify(Object.assign(data, additionalAttrs));
 	}
 
@@ -202,6 +217,7 @@ class Game extends React.Component {
 	}
 
 	loadMap (mapName, edit='snapshots', opts) {
+		console.log('>>> caled loadMap', mapName, this.mapName, edit)
 		if (!opts) opts = {}
 		if (!mapName) mapName = this.mapName;
 		if (!this.state.pristine[mapName]) {
@@ -215,11 +231,13 @@ class Game extends React.Component {
 			snapshots[mapName] = deepCopy(this.state.pristine[mapName]);
 			state.snapshots = snapshots;
 		}
-		this.setState(state, ((arg) => {
-			this.drawMap();
-			this.saveLocalStorage();
-			if (opts.cb) opts.cb();
-		}));
+		return new Promise(resolve => {
+			this.setState(state, ((arg) => {
+				this.loadFog(this.map && this.map.fogUrl)
+				.then(this.drawMap.bind(this))
+				.then(() => { resolve() });
+			}));
+		})
 	}
 
 	updateMap (attrs, mapName, edit) {
@@ -235,33 +253,17 @@ class Game extends React.Component {
 
 	drawMap () {
 		if (!this.map || !this.map.url) return;
-		this.setState({fogLoaded: false}, () => {
-			let map = this.map;
-			let img = new Image();
-			const ctx = this.mapCanvasRef.current.getContext('2d');
+		let img = new Image();
+		const ctx = this.mapCanvasRef.current.getContext('2d');
+		return new Promise((resolve, reject) => {
 			img.onload = () => {
 				this.resizeCanvases(img.width, img.height);
 				ctx.drawImage(img, 0, 0);
-				/* todo draw fog */
-				this.setState({fogLoaded: true});
+				if (!this.state.isInitialLoadFinished) this.setState({isInitialLoadFinished: true});
+				resolve();
 			}
 			img.src = this.map.url;
-		});
-	}
-
-	getImg (callback) {
-		let el = document.querySelector('#file-select');
-		let file = el.files && el.files[0];
-		if (!el.files) return;
-		let reader = new FileReader();
-		let img = new Image();
-		reader.onload = evt => {
-			if (evt.target.readyState === FileReader.DONE) {
-				img.src = evt.target.result;
-				callback(img);
-			}
-		}
-		reader.readAsDataURL(file);
+		})
 	}
 
 	handleText (key, evt) { this.setState({[key]: evt.target.value}) }
@@ -287,7 +289,6 @@ class Game extends React.Component {
 
 	renderTokens () {
 		let game = this;
-		let selectedIndex = this.state.selectedTokenIndex;
 		if (this.tokens) return (
 			this.tokens.map((token, index) => {
 				if (token.url)
@@ -296,7 +297,6 @@ class Game extends React.Component {
 						index={index}
 						token={token}
 						game={game}
-						selected={token.isSelected}
 					/>
 				else
 					return null;
@@ -315,11 +315,6 @@ class Game extends React.Component {
 			);
 	}
 
-	renderOverlay () {
-		if (this.state.tool === 'fog')
-			return (<Overlay game={this} />);
-	}
-
 	render () {
 		try {
 			return (
@@ -330,7 +325,7 @@ class Game extends React.Component {
 					{this.renderTokens()}
 					{this.renderCursors()}
 					<canvas id="indicator" />
-					{this.renderOverlay()}
+					<Overlay game={this} />
 					<div id="control-panel"><ControlPanel game={this} /></div>
 				</div>
 			);
@@ -342,15 +337,20 @@ class Game extends React.Component {
 	}
 
 	resizeCanvases (w, h) {
-		console.log('resizing canvas');
 		if (!w) w = window.innerWidth;
 		if (!h) h = window.innerHeight;
-		this.setState({ w: w, h: h });
-		document.querySelectorAll('canvas').forEach(canvas => {
-			canvas.width = w;
-			canvas.height = h;
-		});
-		/* todo reset fog */
+		let canvases = document.querySelectorAll('canvas');
+		if (canvases[0].width !== w || canvases[0].height !== h) {
+			console.log('resizing canvases', w, h, this.state.isInitialLoadFinished);
+			this.setState({ w: w, h: h, fogLoaded: false }, () => {
+				let fogUrl = this.state.isInitialLoadFinished ? this.fogUrl() : this.map.fogUrl;
+				canvases.forEach(canvas => {
+					canvas.width = w;
+					canvas.height = h;
+				});
+				this.loadFog(fogUrl);
+			});
+		}
 	}
 }
 

@@ -59,15 +59,24 @@ class ControlsMethods {
 			this.setState({[key]: nextState, showHud: true});
 		}
 		switch(evt.code) {
-			case 'KeyC':
-				if (evt.shiftKey)
-					navigator.clipboard.writeText(this.toJson());
+			case 'KeyC': /* dump json to clipboard */
+				if (evt.shiftKey) {
+					let json = this.toJson();
+					console.log(`Building json for clipboard:`, (json.length/1000).toFixed(1), 'kB');
+					navigator.clipboard.writeText(json);
+				}
 				break;
 			case 'KeyH': this.setState({showHud: !this.state.showHud}); break;
 			case 'KeyG': this.setState({tool: 'fog'}); break;
+			case 'KeyL':
+				if (evt.shiftKey)
+					this.loadLocalStorage();
+				else
+					this.saveLocalStorage();
+				break;
 			case 'KeyM': toggleSub.bind(this)('showMapsMenu'); break;
 			case 'KeyT': toggleSub.bind(this)('showTokensMenu'); break;
-			case 'KeyV':
+			case 'KeyV': /* load json from clipboard */
 				if (evt.shiftKey)
 					navigator.clipboard.writeText(this.toJson());
 				else
@@ -80,7 +89,15 @@ class ControlsMethods {
 	onMousemove (evt, noEmit) {
 		if (!this.isHost || this.state.shareCursor)
 			this.state.websocket.sendCur(evt.pageX, evt.pageY, this.state.name);
-		if (evt.buttons & 1) this.dragSelectedTokens(evt);
+		if (evt.buttons & 1) {
+			switch (this.state.tool) {
+				case 'fog':
+					this.fogErase(evt.pageX, evt.pageY); break;
+				case 'move':
+					this.dragSelectedTokens(evt); break;
+				default: break;
+			}
+		}
 		this.setState({cursorX: evt.pageX, cursorY: evt.pageY});
 		if (noEmit) evt.preventDefault();
 	}
@@ -89,9 +106,10 @@ class ControlsMethods {
 		if (evt.buttons & 1) {
 			this.mouseDownX = evt.pageX;
 			this.mouseDownY = evt.pageY;
+			if (!evt.target.classList.contains('token'))
+				this.selectToken(-1, evt);
+			if (this.state.tool === 'fog') this.fogErase(evt.pageX, evt.pageY);
 		}
-		if (!evt.target.classList.contains('token'))
-			this.selectToken(-1, evt);
 	}
 
 	onMouseout () {
