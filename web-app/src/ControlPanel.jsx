@@ -97,11 +97,12 @@ class ControlPanel extends React.Component {
                   <button title="refresh from localStorage" onClick={this.reset.bind(this)}><span role="img" aria-label="resfresh from local storage">&#127744;</span></button>
                   <button title="push current state to all peers" onClick={this.pushRefresh.bind(this)}><span role="img" aria-label="push to peers">&#11145;</span></button>
                   <input placeholder="Name" size="6" value={this.game.state.username||''} onChange={this.handleText.bind(this, 'username')} />
+                  <span>{this.game.state.cursorX},{this.game.state.cursorY}</span>
                 </td>
               </tr>
             </tbody>
           </table>
-          {this.renderSelectedToken()}
+          {this.renderSelectedTokens()}
           {this.renderMaps()}
           {this.renderTokens()}
         </div>
@@ -112,27 +113,22 @@ class ControlPanel extends React.Component {
         <label>Name</label>
         <input placeholder="Name" value={this.game.state.username||''} onChange={this.handleNameChange.bind(this)} />
         <button title="request refresh from DM" onClick={this.requestRefresh.bind(this)}><span role="img" aria-label="request refresh from DM">&#x1F4AB;&#x1F9DA;&#x1F9D9;</span></button>
-        {this.renderSelectedToken()}
+        {this.renderSelectedTokens()}
       </div>);
     else
       return (<div>
         <button onClick={this.toggleHud.bind(this, true)} style={{opacity: 0.3}}><span role="img" aria-label="toggle controls visibility">&#x1F644;</span></button>
-        {this.renderSelectedToken()}
+        {this.renderSelectedTokens()}
       </div>);
   }
 
-  renderSelectedToken () {
-    if (this.game.token) {
-      let token = this.game.token
-      return (
-        <div>
-          <CpToken
-          index={this.game.state.selectedTokenIndex}
-          token={token}
-          game={this.game}/>
-        </div>
-      )
-    }
+  renderSelectedTokens () {
+		let tokens = this.game.tokens.filter(tok => this.game.isTokenOnMap(tok) && tok.isSelected);
+		return (
+			<div>{tokens.map(token =>
+				<CpToken token={token} game={this.game}/>
+			)}</div>
+		)
   }
 
   renderEditControls () {

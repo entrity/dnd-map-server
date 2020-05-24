@@ -4,44 +4,22 @@ class Token extends React.Component {
   constructor (props) {
     super(props);
     this.myRef = React.createRef();
-    this.onDrag = this.onDrag.bind(this);
+    this.state = {};
   }
 
+  get canGrab () { return this.token.pc || this.game.isHost }
   get game () { return this.props.game }
   get token () { return this.props.token }
 
   componentDidMount () {
     const node = this.myRef.current;    
-    node.addEventListener('click', this.onClick.bind(this));
     node.addEventListener('mousedown', this.onMouseDown.bind(this));
   }
 
-  onClick (evt) {
-    this.onMouseDown(evt);
-    this.onMouseUp(evt);
-  }
-  onDrag (evt) {
-    let obj = Object.assign(this.token, {
-      x: evt.pageX - this.startX,
-      y: evt.pageY - this.startY,
-    });
-    this.game.updateToken(obj);
-  }
   onMouseDown (evt) {
-    if (!this.canGrab) return evt;
-    this.game.selectToken(this.props.index);
-    document.addEventListener('mouseup', this.onMouseUp);
-    document.addEventListener('mouseout', this.onMouseUp);
-    document.addEventListener('mousemove', this.onDrag);
-    this.startX = evt.pageX - evt.target.offsetLeft;
-    this.startY = evt.pageY - evt.target.offsetTop;
+    if (!this.token.isSelected)
+      this.game.selectToken(this.props.index, evt);
   }
-  onMouseUp (evt) {
-    document.removeEventListener('mouseup', this.onMouseUp);
-    document.removeEventListener('mouseout', this.onMouseUp);
-    document.removeEventListener('mousemove', this.onDrag);
-  }
-  get canGrab () { return this.token.pc || this.game.isHost }
 
   render () {
     let klass = [
@@ -57,7 +35,7 @@ class Token extends React.Component {
     return (
       <div ref={this.myRef}
         className={klass}
-        style={{top: this.token.y, left: this.token.x}}>
+        style={{top: this.token.y||0, left: this.token.x||0}}>
         <img
           style={{height: this.token.h, width: this.token.w}}
           src={this.token.url}

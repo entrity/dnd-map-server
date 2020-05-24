@@ -2,8 +2,9 @@ import React from 'react';
 import Overlay from './Overlay.jsx';
 import Token from './Token.jsx';
 import ControlPanel from './ControlPanel.jsx';
-import { fog } from './Fog.jsx';
+import FogMethods from './FogMethods.js';
 import GameSocket from './Websockets.js'
+import ControlsMethods from './ControlsMethods.js';
 
 function deepCopy (argument) { return argument === undefined ? null : JSON.parse(JSON.stringify(argument)) }
 
@@ -29,23 +30,20 @@ class Game extends React.Component {
 	}
 	get fog () { return this.map ? this.map.fog : null }
 	get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
-	/* Selected token */
-	get token () { return this.tokens && !isNaN(this.state.selectedTokenIndex) && this.tokens[this.state.selectedTokenIndex] }
-	get tokens () { return this.map ? this.map.tokens || [] : [] }
+	get tokens () { return this.state.tokens }
 
 	constructor (props) {
 		super(props);
 		window.game = this;
 		this.mapCanvasRef = React.createRef();
 		let tokens = [
-			{name: 'bar', pc: 0},
-			{name: 'foo', url: '/belmont.jpg'},
-			{name: 'arr', pc: 1},
-			{name: 'win', pc: 1, url: '/redhead.jpg', y: 50, x: 90, w: 64, h:64},
+			{name: 'bar', pc: 0, all: true},
+			{name: 'foo', url: '/belmont.jpg', all: true},
+			{name: 'arr', pc: 1, all: true},
+			{name: 'win', pc: 1, url: '/redhead.jpg', y: 50, x: 90, w: 64, h:64, all: true},
 		];
 		let defaultMap = {
 			url: "/FFtri9T.png",
-			tokens: tokens,
 			spawnX: 40, spawnY: 80,
 			fog: {},
 		};
@@ -59,6 +57,7 @@ class Game extends React.Component {
 				default: defaultMap,
 				kiwi: {url: '/kiwi.jpeg'},
 			},
+			tokens: tokens,
 			showHud: true,
 			showMapsMenu: false,
 			showTokensMenu: false,
@@ -67,70 +66,79 @@ class Game extends React.Component {
 			snapshots: {}, // non-pristine maps
 		};
 		this.state.websocket = new GameSocket(this);
+		this.extend(FogMethods);
+		this.extend(ControlsMethods);
 	}
+
+	/* Helper function for extending other classes */
+	extend (base) {
+		Object.getOwnPropertyNames(base.prototype)
+		.filter(prop => prop != 'constructor')
+		.forEach(prop => {
+			Game.prototype[prop] = base.prototype[prop];
+		});
+	}
+
+	componentWillUnmount () { this.removeControlsCallbacks() }
 
 	componentDidMount () {
 		window.addEventListener('resize', this.drawMap.bind(this));
+		this.addControlsCallbacks();
 		this.mapCanvasRef.current.addEventListener('click', ((evt) => {
-			this.selectToken(null)
 			this.setState({showMapsMenu: false});
 			this.setState({showTokensMenu: false});
 		}));
-		window.document.addEventListener('keydown', this.onKeydown.bind(this));
-		window.document.addEventListener('keypress', this.onKeypress.bind(this));
-		window.document.addEventListener('mousemove', this.onMousemove.bind(this));
 		this.setState({fogLoaded: false}, () => {
 			this.loadMap(); /* load default map */
 			this.loadLocalStorage(); /* load map from storage, if any */
 		});
 	}
 
-	onKeydown (evt) {
-		if (this.token) {
-			let token = deepCopy(this.token);
-			switch (evt.keyCode) {
-				case 27: /* escape */ this.selectToken(); return;
-				case 37: /* left */ token.x -= 10; break;
-				case 38: /* up */ token.y -= 10; break;
-				case 39: /* right */ token.x += 10; break;
-				case 40: /* down */ token.y += 10; break;
-				default: return;
+	dragSelectedTokens (evt) {
+		let tokens = deepCopy(this.tokens);
+		tokens.forEach(token => {
+			if (token.isSelected) {
+				Object.assign(token, {
+					x: token.initX + evt.pageX - this.mouseDownX,
+					y: token.initY + evt.pageY - this.mouseDownY,
+				});
 			}
-			evt.preventDefault();
-			this.updateToken(token);
-		}
+		});
+		this.setState({tokens: tokens});
 	}
 
-	onKeypress (evt) {
-		if (!this.isHost) return evt;
-		if (evt.target.tagName === 'INPUT' && evt.target.type === 'text')
-			return evt;
-		function toggleSub (key) {
-			let nextState = !(this.state.showHud && this.state[key]);
-			this.setState({[key]: nextState, showHud: true});
+	selectToken (index, evt) {
+		function deselect (token) {
+			if (token) {
+				delete token.isSelected;
+				delete token.initX;
+				delete token.initY;
+			}
 		}
-		switch(evt.code) {
-			case 'KeyC':
-				if (evt.shiftKey)
-					navigator.clipboard.writeText(this.toJson());
-				break;
-			case 'KeyH': this.setState({showHud: !this.state.showHud}); break;
-			case 'KeyG': this.setState({tool: 'fog'}); break;
-			case 'KeyM': toggleSub.bind(this)('showMapsMenu'); break;
-			case 'KeyT': toggleSub.bind(this)('showTokensMenu'); break;
-			case 'KeyV':
-				if (evt.shiftKey)
-					navigator.clipboard.writeText(this.toJson());
-				else
-					this.setState({tool: 'move'});
-				break;
-			default: return
+		function select (token) {
+			if (token) {
+				token.isSelected = true;
+				token.initX = evt.target.offsetLeft;
+				token.initY = evt.target.offsetTop;
+			}
 		}
+		let tokens = deepCopy(this.tokens);
+		/* Single-select mode */
+		if (!evt.ctrlKey) {
+			tokens.forEach(token => { deselect(token) });
+			select(tokens[index]);
+		}
+		/* Toggle selected token */
+		else if (tokens[index].isSelected)
+			deselect(tokens[index]);
+		/* Multi-select enabled */
+		else
+			select(tokens[index]);
+		this.setState({tokens: tokens});
 	}
 
-	onMousemove (evt, noEmit) {
-		if (!this.isHost || this.state.shareCursor)
-			this.state.websocket.sendCur(evt.pageX, evt.pageY, this.state.name);
+	isTokenOnMap (token) {
+		return token && this.map && (token.allMaps || token[this.map.name]);
 	}
 
 	updateCur (x, y, username) {
@@ -193,26 +201,6 @@ class Game extends React.Component {
 		this.setState({cursors: cursors});
 	}
 
-	fogReset (opts) {
-		fog.reset();
-		this.updateMap({fog: {}});
-		if (!opts || !opts.noEmit) this.state.websocket.sendFre();
-	}
-
-	fogErase (x, y, radius, noEmit) {
-		if (!radius) radius = this.state.radius;
-		let modulus = Math.max(3, Math.round(radius / 5));
-		x -= x % modulus;
-		y -= y % modulus;
-		let dots = Object.assign({}, this.map.fog||{});
-		if (Array.isArray(dots)) dots = {};
-		let key = [x,y].join(',');
-		dots[key] = Math.max(radius, dots[key] || 0);
-		fog.erase(x, y, radius);
-		this.updateMap({fog: dots});
-		if (!noEmit) this.state.websocket.sendFog(x, y, radius);
-	}
-
 	loadMap (mapName, edit='snapshots', opts) {
 		if (!opts) opts = {}
 		if (!mapName) mapName = this.mapName;
@@ -254,10 +242,7 @@ class Game extends React.Component {
 			img.onload = () => {
 				this.resizeCanvases(img.width, img.height);
 				ctx.drawImage(img, 0, 0);
-				for (let key in map.fog) {
-					let [x, y] = key.split(',');
-					fog.erase(x, y, map.fog[key]);
-				}
+				/* todo draw fog */
 				this.setState({fogLoaded: true});
 			}
 			img.src = this.map.url;
@@ -282,7 +267,6 @@ class Game extends React.Component {
 	handleText (key, evt) { this.setState({[key]: evt.target.value}) }
 	handleCheckbox (key, evt) { this.setState({[key]: evt.target.checked}) }
 
-	selectToken (index) { this.setState({selectedTokenIndex: index}) }
 	updateToken (attrs, index, noEmit) {
 		if (isNaN(index)) index = this.state.selectedTokenIndex;
 		let tokens = deepCopy(this.tokens);
@@ -312,7 +296,7 @@ class Game extends React.Component {
 						index={index}
 						token={token}
 						game={game}
-						selected={selectedIndex === index}
+						selected={token.isSelected}
 					/>
 				else
 					return null;
@@ -366,10 +350,8 @@ class Game extends React.Component {
 			canvas.width = w;
 			canvas.height = h;
 		});
-		fog.reset(); /* Fill fog canvas w/out saving */
+		/* todo reset fog */
 	}
 }
-
-console.log('loaded src')
 
 export default Game;

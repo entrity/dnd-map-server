@@ -1,4 +1,26 @@
-/* Fuzzy erase a circle of fog */
+class FogMethods {
+	fogReset (opts) {
+		resetFog();
+		this.updateMap({fog: {}});
+		if (!opts || !opts.noEmit) this.state.websocket.sendFre();
+	}
+
+	fogErase (x, y, radius, noEmit) {
+		if (!radius) radius = this.state.radius;
+		let modulus = Math.max(3, Math.round(radius / 5));
+		x -= x % modulus;
+		y -= y % modulus;
+		let dots = Object.assign({}, this.map.fog||{});
+		if (Array.isArray(dots)) dots = {};
+		let key = [x,y].join(',');
+		dots[key] = Math.max(radius, dots[key] || 0);
+		fogErase(x, y, radius);
+		this.updateMap({fog: dots});
+		if (!noEmit) this.state.websocket.sendFog(x, y, radius);
+	}
+}
+
+/* Legacy */
 function fogErase (x, y, r, r2) {
 	let context = getContext();
 	if (!context) return;
@@ -23,9 +45,5 @@ function resetFog () {
 	context.fillStyle = 'black';
 	context.fillRect(0, 0, 9999, 9999);
 }
-export const fog = {
-	reset: resetFog,
-	erase: fogErase,
-};
-export default fog;
-window.fogErase = fogErase
+
+export default FogMethods;
