@@ -3,10 +3,10 @@ import Overlay from './Overlay.jsx';
 import Token from './Token.jsx';
 import ControlPanel from './ControlPanel.jsx';
 import FogMethods from './FogMethods.js';
+import TokenMethods from './TokenMethods.js';
 import GameSocket from './Websockets.js'
 import ControlsMethods from './ControlsMethods.js';
-
-function deepCopy (argument) { return argument === undefined ? null : JSON.parse(JSON.stringify(argument)) }
+import { deepCopy } from './Helper.js';
 
 class Game extends React.Component {
 	get params () {
@@ -64,6 +64,7 @@ class Game extends React.Component {
 			snapshots: {}, // non-pristine maps
 		};
 		this.state.websocket = new GameSocket(this);
+		this.extend(TokenMethods);
 		this.extend(FogMethods);
 		this.extend(ControlsMethods);
 	}
@@ -101,53 +102,6 @@ class Game extends React.Component {
 		});
 	}
 
-	dragSelectedTokens (evt) {
-		let tokens = deepCopy(this.tokens);
-		tokens.forEach(token => {
-			if (token.isSelected) {
-				Object.assign(token, {
-					x: token.initX + evt.pageX - this.mouseDownX,
-					y: token.initY + evt.pageY - this.mouseDownY,
-				});
-			}
-		});
-		this.setState({tokens: tokens});
-	}
-
-	selectToken (index, evt) {
-		function deselect (token) {
-			if (token) {
-				delete token.isSelected;
-				delete token.initX;
-				delete token.initY;
-			}
-		}
-		function select (token) {
-			if (token) {
-				token.isSelected = true;
-				token.initX = evt.target.offsetLeft;
-				token.initY = evt.target.offsetTop;
-			}
-		}
-		let tokens = deepCopy(this.tokens);
-		/* Single-select mode */
-		if (!evt.ctrlKey) {
-			tokens.forEach(token => { deselect(token) });
-			select(tokens[index]);
-		}
-		/* Toggle selected token */
-		else if (tokens[index].isSelected)
-			deselect(tokens[index]);
-		/* Multi-select enabled */
-		else
-			select(tokens[index]);
-		this.setState({tokens: tokens});
-	}
-
-	isTokenOnMap (token) {
-		return token && this.map && (token.allMaps || token[this.map.name]);
-	}
-
 	updateCur (x, y, username) {
 		let cursors = deepCopy(this.state.cursors||{});
 		cursors[username] = {x: x, y: y, date: new Date()};
@@ -181,7 +135,7 @@ class Game extends React.Component {
 			['pristine', 'snapshots'].forEach(key => {
 				state[key] = data[key] || {};
 			});
-			['mapName', 'radius'].forEach(key => {
+			['tokens', 'mapName', 'radius'].forEach(key => {
 				state[key] = data[key];
 			});
 			if (!state.mapName || !state.pristine[state.mapName])
@@ -196,14 +150,14 @@ class Game extends React.Component {
 	}
 
 	toJson (additionalAttrs) {
-		let data = {};
 		let game = this;
-		['mapName', 'radius'].forEach(key => {
+		let data = {};
+		['tokens', 'mapName', 'radius'].forEach(key => {
 			data[key] = game.state[key];
 		});
 		['pristine', 'snapshots'].forEach(key => {
 			if (game.state[key]) data[key] = game.state[key];
-		})
+		});
 		if (data.snapshots && data.mapName && data.snapshots[data.mapName])
 			data.snapshots[data.mapName].fogUrl = this.fogUrl();
 		return JSON.stringify(Object.assign(data, additionalAttrs));
@@ -269,34 +223,12 @@ class Game extends React.Component {
 	handleText (key, evt) { this.setState({[key]: evt.target.value}) }
 	handleCheckbox (key, evt) { this.setState({[key]: evt.target.checked}) }
 
-	updateToken (attrs, index, noEmit) {
-		if (isNaN(index)) index = this.state.selectedTokenIndex;
-		let tokens = deepCopy(this.tokens);
-		['x', 'y'].forEach(key => { attrs[key] = parseInt(attrs[key]) || 0 });
-		['h', 'w'].forEach(key => { attrs[key] = parseInt(attrs[key]) || undefined });
-		tokens[index] = Object.assign(deepCopy(tokens[index])||{}, attrs);
-		this.updateMap({ tokens: tokens });
-		if (!noEmit) this.state.websocket.sendTok(index, tokens[index]);
-	}
-	deleteToken (index) {
-		if (index === undefined) {
-			index = this.selectedTokenIndex;
-			delete this.selectedTokenIndex;
-		}
-		let tokens = deepCopy(this.tokens).splice(index, 1);
-		this.updateMap({tokens: tokens});
-	}
-
 	renderTokens () {
 		let game = this;
 		if (this.tokens) return (
 			this.tokens.map((token, index) => {
 				if (token.url)
-					return <Token
-						key={index}
-						index={index}
-						token={token}
-						game={game}
+					return <Token key={index} index={index} token={token} game={game}
 					/>
 				else
 					return null;

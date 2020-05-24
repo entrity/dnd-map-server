@@ -1,24 +1,4 @@
-function deepCopy (argument) { return argument === undefined ? null : JSON.parse(JSON.stringify(argument)) }
-
-function moveSelectedTokens (game, evt) {
-	if (game.tokens.find(t => t.isSelected)) {
-		let tokens = deepCopy(game.tokens);
-		let moveFactor = evt.shiftKey ? 100 : 10;
-		tokens.forEach(token => {
-			if (token.isSelected)
-				switch (evt.keyCode) {
-					case 27: token.isSelected = false; break; /* escape */
-					case 37: token.x -= moveFactor; break; /* left */
-					case 38: token.y -= moveFactor; break; /* up */
-					case 39: token.x += moveFactor; break; /* right */
-					case 40: token.y += moveFactor; break; /* down */
-					default: return;
-				}
-		});
-		game.setState({tokens: tokens});
-		evt.preventDefault();
-	}
-}
+import { deepCopy } from './Helper.js';
 
 class ControlsMethods {
 	addControlsCallbacks () {
@@ -45,7 +25,7 @@ class ControlsMethods {
 			case 37:
 			case 38:
 			case 39:
-			case 40: moveSelectedTokens(this, evt); break;
+			case 40: this.moveSelectedTokens(evt); break;
 			default: return;
 		}
 	}

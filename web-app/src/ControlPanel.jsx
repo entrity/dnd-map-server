@@ -1,8 +1,7 @@
 import React from 'react';
 import CpMap from './cp/Map.jsx';
 import CpToken from './cp/Token.jsx';
-
-function deepCopy (argument) { return JSON.parse(JSON.stringify(argument)) }
+import { deepCopy } from './Helper.js';
 
 class ControlPanel extends React.Component {
   constructor (props) {
