@@ -50,7 +50,7 @@ class Game extends React.Component {
 			maps: [defaultMap, kiwiMap],
 			tokens: tokens,
 			showHud: true,
-			showMapsMenu: true,
+			showMapsMenu: false,
 			showTokensMenu: false,
 			mapName: 'default',
 			cursors: {},

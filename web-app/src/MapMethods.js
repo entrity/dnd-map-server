@@ -9,6 +9,7 @@ class MapMethods {
 				NotificationManager.error('Tried to draw map, but `this.map` or `this.map.url` was missing', 'drawMap')
 				reject();
 			}
+			NotificationManager.info(this.map.url, 'Drawing map', 700);
 			let img = new Image();
 			const ctx = this.mapCanvasRef.current.getContext('2d');
 			img.onload = () => {

@@ -25,8 +25,9 @@ class TokenMethods {
 		this.updateTokens(tokens);
 	}
 
-	isTokenOnMap (token) {
-		return token && this.map && (token.all || token[this.map.name]);
+	isTokenOnMap (token, map) {
+		if (!map) map = this.map;
+		return token && map && (token.all || token[map.name]);
 	}
 
 	loadTokensForMap (mapName, tokens) {
@@ -85,13 +86,13 @@ class TokenMethods {
 		function select (token) {
 			if (token) {
 				token.isSelected = true;
-				token.initX = evt.target.offsetLeft;
-				token.initY = evt.target.offsetTop;
+				token.initX = evt && evt.target.offsetLeft;
+				token.initY = evt && evt.target.offsetTop;
 			}
 		}
 		let tokens = deepCopy(this.tokens);
 		/* Single-select mode */
-		if (!evt.ctrlKey) {
+		if (!evt || !evt.ctrlKey) {
 			tokens.forEach(token => { deselect(token) });
 			select(tokens[index]);
 		}

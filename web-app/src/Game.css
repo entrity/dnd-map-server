@@ -31,7 +31,7 @@ canvas, #control-panel {
 	z-index: var(--z-cp);
 	background: rgba(255,255,255,0.5);
 }
-#control-panel input[type=number] { width: 32px; }
+#control-panel input[type=number] { width: 40px; }
 
 canvas {
 	position: absolute;

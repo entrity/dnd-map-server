@@ -25,18 +25,14 @@ class ControlPanel extends React.Component {
   setTool (tool) { this.game.setState({tool: tool}) }
 
   addMap () {
-    if (!this.state.newMapUrl || this.state.newMapUrl.trim() === '') return;
     let maps = deepCopy(this.maps);
     maps.push({url: this.state.newMapUrl.trim()});
     this.game.setState({maps: maps});
   }
 
   addToken () {
-    let name = this.state.newTokenName && this.state.newTokenName.trim();
-    if (!name || !name.length) return;
     let tokens = deepCopy(this.tokens);
-    tokens.push({name: name});
-    console.log('Adding token', name, tokens)
+    tokens.push({url: this.state.newTokenUrl.trim()});
     this.game.setState({tokens: tokens});
   }
 
@@ -64,7 +60,7 @@ class ControlPanel extends React.Component {
                     <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showMapsMenu')} checked={!!this.game.state.showMapsMenu} />&#x1f5fa;
                   </label>
                   <label title="show tokens menu">
-                    <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showTokensMenu')} checked={!!this.game.state.showTokensMenu} />&#x2657;
+                    <input type="checkbox" onChange={this.handleCheckbox.bind(this, 'showTokensMenu')} checked={!!this.game.state.showTokensMenu} />&#x1f47e;
                   </label>
                 </td>
                 <td>
@@ -81,7 +77,6 @@ class ControlPanel extends React.Component {
                   <input type="number" min="1" step="5" onChange={this.handleText.bind(this, 'radius')} value={this.game.state.radius} size="2" placeholder="radius" />
                 </td>
                 <td>
-                  <button title="refresh from localStorage" onClick={this.reset.bind(this)}><span role="img" aria-label="resfresh from local storage">&#127744;</span></button>
                   <button title="push current state to all peers" onClick={this.pushRefresh.bind(this)}><span role="img" aria-label="push to peers">&#11145;</span></button>
                   <input placeholder="Name" size="6" value={this.game.state.username||''} onChange={this.handleText.bind(this, 'username')} />
                   <span>{this.game.state.cursorX},{this.game.state.cursorY}</span>
@@ -165,7 +160,7 @@ class ControlPanel extends React.Component {
         <div id="tokens-cp">
           <div>Tokens {this.tokensN} {this.game.state.edit} {this.game.state.mapName}</div>
 
-          <input onChange={this.handleLocalText.bind(this, 'newTokenName')} value={this.state.newTokenName || ''} placeholder='Token name' />
+          <input onChange={this.handleLocalText.bind(this, 'newTokenUrl')} value={this.state.newTokenUrl || ''} placeholder='Token name' />
           <button onClick={this.addToken.bind(this)}>Add token</button>
 
           <ol>
