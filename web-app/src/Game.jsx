@@ -3,6 +3,7 @@ import Overlay from './Overlay.jsx';
 import Token from './Token.jsx';
 import ControlPanel from './ControlPanel.jsx';
 import FogMethods from './FogMethods.js';
+import MapMethods from './MapMethods.js';
 import TokenMethods from './TokenMethods.js';
 import GameSocket from './Websockets.js'
 import ControlsMethods from './ControlsMethods.js';
@@ -17,7 +18,7 @@ class Game extends React.Component {
 	get isHost () { return this.params.get('host') && (this.params.get('host') !== '0') }
 	get room () { return this.params.get('room') || 'defaultRoom' }
 	get map () { return this.state.map }
-	get maps () { return this.state.maps }
+	get maps () { return this.state.maps || [] }
 	get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
 	get tokens () { return this.state.tokens }
 
@@ -47,13 +48,14 @@ class Game extends React.Component {
 			maps: [defaultMap, kiwiMap],
 			tokens: tokens,
 			showHud: true,
-			showMapsMenu: false,
+			showMapsMenu: true,
 			showTokensMenu: false,
 			mapName: 'default',
 			cursors: {},
 		};
 		this.state.websocket = new GameSocket(this);
 		this.extend(TokenMethods);
+		this.extend(MapMethods);
 		this.extend(FogMethods);
 		this.extend(ControlsMethods);
 	}
@@ -84,10 +86,11 @@ class Game extends React.Component {
 		}));
 		this.setState({fogLoaded: false}, () => {
 			console.log('Attempting to load from localStorage')
-			if (!this.loadLocalStorage()) { /* load map from storage, if any */
+			/* load map from storage, if any */
+			this.loadLocalStorage().catch(() => {
 				console.log('Attempting to load default map')
 				this.loadMap(); /* load default map */
-			}
+			});
 		});
 	}
 
@@ -103,14 +106,18 @@ class Game extends React.Component {
 
 	loadLocalStorage () {
 		let json = localStorage.getItem(this.room);
-		if (!this.fromJson(json)) {
-			console.error(`Bad localStorage load for ${this.room}. Clearing.`);
-			localStorage.removeItem(this.room);
-			return false;
-		} else return true;
+		return new Promise((resolve, reject) => {
+			this.fromJson(json).then(() => { resolve() })
+			.catch(() => {
+				console.error(`Bad localStorage load for ${this.room}. Clearing.`);
+				localStorage.removeItem(this.room);
+				reject();
+			});
+		});
 	}
 
 	saveLocalStorage (evt) {
+		console.error('saving...',this.state.maps)
 		if (this.state.isInitialLoadFinished)
 			localStorage.setItem(this.room, this.toJson());
 		else
@@ -118,32 +125,32 @@ class Game extends React.Component {
 	}
 
 	fromJson (json) {
-		if (!json) return;
-		try {
-			let data = JSON.parse(json);
-			let state = {};
-			['tokens', 'mapName', 'radius'].forEach(key => {
-				state[key] = data[key];
-			});
-			if (!state.radius) state.radius = 33;
-			this.setState(state, this.loadMap.bind(this));
-			return true;
-		} catch (ex) {
-			console.error(ex);
-			return false;
-		}
+		return new Promise((resolve, reject) => {
+			if (!json) reject();
+			try {
+				let data = JSON.parse(json);
+				let state = {};
+				['tokens', 'maps', 'mapName', 'radius'].forEach(key => {
+					state[key] = data[key];
+				});
+				if (!state.radius) state.radius = 33;
+				this.setState(state, () => {
+					this.loadMap().then(resolve).catch(reject);
+				});
+			} catch (ex) {
+				console.error(ex);
+				reject();
+			}
+		})
 	}
 
 	toJson (additionalAttrs) {
 		let game = this;
 		let data = {};
-		['tokens', 'mapName', 'radius'].forEach(key => {
+		['tokens', 'maps', 'mapName', 'radius'].forEach(key => {
 			data[key] = game.state[key];
 		});
 		if (this.map) this.dumpTokensForMap(this.map.name, data.tokens);
-		['pristine', 'snapshots'].forEach(key => {
-			if (game.state[key]) data[key] = game.state[key];
-		});
 		if (data.snapshots && data.mapName && data.snapshots[data.mapName])
 			data.snapshots[data.mapName].fogUrl = this.fogUrl();
 		return JSON.stringify(Object.assign(data, additionalAttrs));
@@ -156,51 +163,46 @@ class Game extends React.Component {
 		this.setState({cursors: cursors});
 	}
 
-	loadMap (map, edit='snapshots', opts) {
-		if (!opts) opts = {};
-		if (!map) map = this.maps[0];
-		if (!map) {
-			console.error('Attempted to load non-existant map');
-			return null;
-		}
-		/* Dump tokens' states */
-		let oldMap = this.state.map;
-		let tokens = deepCopy(this.tokens);
-		if (oldMap && oldMap.name)
-			this.dumpTokensForMap(oldMap.name, tokens);
-		/* Load tokens' states */
-		this.loadTokensForMap(map.name, tokens);
-		let state = { map: map, edit: edit, fogLoaded: false, tokens: tokens };
-		return new Promise(resolve => {
+	loadMap (map, edit='snapshots') {
+		return new Promise((resolve, reject) => {
+			if (!map) map = this.maps[0];
+			if (!map) {
+				console.error('Attempted to load non-existant map');
+				reject();
+			}
+			/* Dump tokens' states */
+			let oldMap = this.state.map;
+			let tokens = deepCopy(this.tokens);
+			if (oldMap && oldMap.name)
+				this.dumpTokensForMap(oldMap.name, tokens);
+			/* Load tokens' states */
+			this.loadTokensForMap(map.name, tokens);
+			let state = { map: map, edit: edit, fogLoaded: false, tokens: tokens };
 			this.setState(state, ((arg) => {
 				this.loadFog(this.map && this.map.fogUrl)
+				.catch(() => { console.error('failed to loadfog') })
 				.then(this.drawMap.bind(this))
 				.then(() => { resolve() });
 			}));
 		})
 	}
 
-	updateMap (attrs, mapName, edit) {
-		if (!mapName) mapName = this.mapName;
-		if (!edit) edit = this.state.edit;
-		let map = Object.assign(deepCopy(this.map), attrs);
-		this.setState(prev => ({
-			[edit]: { ...prev[edit], [mapName]: map },
-		}), this.saveLocalStorage);
-	}
-
 	updateSnapshot (attrs, mapName) { this.updateMap(attrs, mapName, 'snapshots') }
 
 	drawMap () {
-		if (!this.map || !this.map.url) return;
-		let img = new Image();
-		const ctx = this.mapCanvasRef.current.getContext('2d');
 		return new Promise((resolve, reject) => {
+			if (!this.map || !this.map.url) reject();
+			let img = new Image();
+			const ctx = this.mapCanvasRef.current.getContext('2d');
 			img.onload = () => {
 				this.resizeCanvases(img.width, img.height);
 				ctx.drawImage(img, 0, 0);
 				if (!this.state.isInitialLoadFinished) this.setState({isInitialLoadFinished: true});
 				resolve();
+			}
+			img.onerror = () => {
+				console.error(`Unable to draw image`, img.src);
+				reject();
 			}
 			img.src = this.map.url;
 		})

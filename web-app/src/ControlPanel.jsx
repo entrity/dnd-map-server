@@ -10,8 +10,7 @@ class ControlPanel extends React.Component {
   }
 
   get game () { return this.props.game }
-  get maps () { return (this.game && this.game.state.pristine) || {} }
-  get mapsN () { return this.maps && Object.keys(this.maps).length }
+  get maps () { return (this.game && this.game.maps) || [] }
   get tokens () { return (this.game && this.game.tokens) || [] }
   get tokensN () { return this.tokens && this.tokens.length }
 
@@ -26,21 +25,10 @@ class ControlPanel extends React.Component {
   setTool (tool) { this.game.setState({tool: tool}) }
 
   addMap () {
-    if (!this.state.newMapName || this.state.newMapName.trim() === '') return;
-    let maps = Object.assign(this.maps || {});
-    maps[[this.state.newMapName.trim()]] = {};
+    if (!this.state.newMapUrl || this.state.newMapUrl.trim() === '') return;
+    let maps = deepCopy(this.maps);
+    maps.push({url: this.state.newMapUrl.trim()});
     this.game.setState({maps: maps});
-  }
-  updateMapConfig (idx, map) {
-    let maps = this.props.state.maps.slice();
-    maps[idx] = Object.assign(map);
-    this.game.setState({maps: maps});
-  }
-  deleteMap (map) {
-    let maps = this.props.state.maps.filter(item => {
-      return item.name !== map.name
-    });
-    this.props.setState({maps: maps});
   }
 
   addToken () {
@@ -49,7 +37,7 @@ class ControlPanel extends React.Component {
     let tokens = deepCopy(this.tokens);
     tokens.push({name: name});
     console.log('Adding token', name, tokens)
-    this.game.updateMap({tokens: tokens});
+    this.game.setState({tokens: tokens});
   }
 
   toggleHud (value) { this.game.setState({showHud: value}) }
@@ -159,16 +147,12 @@ class ControlPanel extends React.Component {
         <div id="maps-cp">
           <div>Maps {this.mapsN}</div>
 
-          <input onChange={this.handleLocalText.bind(this, 'newMapName')} value={this.state.newMapName || ''} placeholder='Map name' />
+          <input onChange={this.handleLocalText.bind(this, 'newMapUrl')} value={this.state.newMapUrl || ''} placeholder='Map URL' />
           <button onClick={this.addMap.bind(this)}>Add map</button>
 
           <ol>
-            { Object.keys(this.maps).map((key) =>
-              <CpMap
-                key={key}
-                name={key}
-                map={this.maps[key]}
-                game={this.game} />
+            { this.maps.map((map, index) =>
+              <CpMap key={index} index={index} map={map} game={this.game} />
             )}
           </ol>
         </div>
