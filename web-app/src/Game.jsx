@@ -8,6 +8,8 @@ import TokenMethods from './TokenMethods.js';
 import GameSocket from './Websockets.js'
 import ControlsMethods from './ControlsMethods.js';
 import { deepCopy } from './Helper.js';
+import { NotificationContainer, NotificationManager } from 'react-notifications';
+import 'react-notifications/lib/notifications.css';
 
 class Game extends React.Component {
 	get params () {
@@ -111,6 +113,7 @@ class Game extends React.Component {
 			.catch(() => {
 				console.error(`Bad localStorage load for ${this.room}. Clearing.`);
 				localStorage.removeItem(this.room);
+				NotificationManager.error('Bad localStorage', 'foo');
 				reject();
 			});
 		});
@@ -126,7 +129,10 @@ class Game extends React.Component {
 
 	fromJson (json) {
 		return new Promise((resolve, reject) => {
-			if (!json) reject();
+			if (!json) {
+				NotificationManager.warning('Tried to load from JSON, but no JSON was found', 'Bad JSON load');
+				reject();
+			}
 			try {
 				let data = JSON.parse(json);
 				let state = {};
@@ -139,6 +145,7 @@ class Game extends React.Component {
 				});
 			} catch (ex) {
 				console.error(ex);
+				NotificationManager.error(ex.message, 'Error in `fromJSON`');
 				reject();
 			}
 		})
@@ -163,50 +170,7 @@ class Game extends React.Component {
 		this.setState({cursors: cursors});
 	}
 
-	loadMap (map, edit='snapshots') {
-		return new Promise((resolve, reject) => {
-			if (!map) map = this.maps[0];
-			if (!map) {
-				console.error('Attempted to load non-existant map');
-				reject();
-			}
-			/* Dump tokens' states */
-			let oldMap = this.state.map;
-			let tokens = deepCopy(this.tokens);
-			if (oldMap && oldMap.name)
-				this.dumpTokensForMap(oldMap.name, tokens);
-			/* Load tokens' states */
-			this.loadTokensForMap(map.name, tokens);
-			let state = { map: map, edit: edit, fogLoaded: false, tokens: tokens };
-			this.setState(state, ((arg) => {
-				this.loadFog(this.map && this.map.fogUrl)
-				.catch(() => { console.error('failed to loadfog') })
-				.then(this.drawMap.bind(this))
-				.then(() => { resolve() });
-			}));
-		})
-	}
-
 	updateSnapshot (attrs, mapName) { this.updateMap(attrs, mapName, 'snapshots') }
-
-	drawMap () {
-		return new Promise((resolve, reject) => {
-			if (!this.map || !this.map.url) reject();
-			let img = new Image();
-			const ctx = this.mapCanvasRef.current.getContext('2d');
-			img.onload = () => {
-				this.resizeCanvases(img.width, img.height);
-				ctx.drawImage(img, 0, 0);
-				if (!this.state.isInitialLoadFinished) this.setState({isInitialLoadFinished: true});
-				resolve();
-			}
-			img.onerror = () => {
-				console.error(`Unable to draw image`, img.src);
-				reject();
-			}
-			img.src = this.map.url;
-		})
-	}
 
 	handleText (key, evt) { this.setState({[key]: evt.target.value}) }
 	handleCheckbox (key, evt) { this.setState({[key]: evt.target.checked}) }
@@ -237,6 +201,7 @@ class Game extends React.Component {
 		try {
 			return (
 				<div id="wrapper" className={this.state.edit}>
+					<NotificationContainer/>
 					<canvas id="canvas-map" ref={this.mapCanvasRef} />
 					<div id="fog-placeholder" className={this.state.fogLoaded ? 'gone' : ''}>{/* Just blacks out screen while waiting for fog to be drawn so that Tokens and Map are not revealed */}</div>
 					<canvas id="canvas-fog" className="passthrough" style={{opacity: this.fogOpacity}} />
