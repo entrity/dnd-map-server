@@ -5,25 +5,31 @@ import 'react-notifications/lib/notifications.css';
 class MapMethods {
 	drawMap () {
 		return new Promise((resolve, reject) => {
-			if (!this.map || !this.map.url) {
-				NotificationManager.error('Tried to draw map, but `this.map` or `this.map.url` was missing', 'drawMap')
-				reject();
+			if (!this.map) {
+				NotificationManager.error('Tried to draw map, but `this.map` was missing', 'drawMap')
+				return reject();
 			}
-			NotificationManager.info(this.map.url, 'Drawing map', 700);
-			let img = new Image();
-			const ctx = this.mapCanvasRef.current.getContext('2d');
-			img.onload = () => {
-				this.resizeCanvases(img.width, img.height);
-				ctx.drawImage(img, 0, 0);
-				if (!this.state.isInitialLoadFinished) this.setState({isInitialLoadFinished: true});
-				resolve();
+			const canvas = this.mapCanvasRef.current;
+			if (!this.map.url || this.map.url.trim().length === 0) {
+				NotificationManager.info('Whiteboard');
+				let w = canvas.width; canvas.width = w; /* clear (reset) canvas */
+			} else {
+				NotificationManager.info(this.map.url, 'Drawing map', 700);
+				const ctx = canvas.getContext('2d');
+				let img = new Image();
+				img.onload = () => {
+					this.resizeCanvases(img.width, img.height);
+					ctx.drawImage(img, 0, 0);
+					if (!this.state.isInitialLoadFinished) this.setState({isInitialLoadFinished: true});
+					resolve();
+				}
+				img.onerror = () => {
+					NotificationManager.error(`${img.src && img.src.substr(0,155)}...`, 'drawMap: bad url');
+					console.error(`Unable to draw image`, img.src);
+					reject();
+				}
+				img.src = this.map.url;
 			}
-			img.onerror = () => {
-				NotificationManager.error(`${img.src && img.src.substr(0,155)}...`, 'drawMap: bad url');
-				console.error(`Unable to draw image`, img.src);
-				reject();
-			}
-			img.src = this.map.url;
 		})
 	}
 
@@ -42,12 +48,19 @@ class MapMethods {
 				this.dumpTokensForMap(oldMap.name, tokens);
 			/* Load tokens' states */
 			this.loadTokensForMap(map.name, tokens);
+			/* Dump drawing's state */
+			if (oldMap && oldMap.name)
+				oldMap.drawingUrl = this.dumpDrawing();
+			/* Set new state */
 			let state = { map: map, edit: edit, fogLoaded: false, tokens: tokens };
 			this.setState(state, ((arg) => {
 				this.loadFog(this.map && this.map.fogUrl)
 				.catch(() => { console.error('failed to loadfog') })
 				.then(this.drawMap.bind(this))
-				.then(() => { resolve() });
+				.then(() => {
+					this.loadDrawing(); /* Load drawing's state*/
+					resolve();
+				});
 			}));
 		})
 	}

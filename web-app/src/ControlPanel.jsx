@@ -14,7 +14,7 @@ class ControlPanel extends React.Component {
   get tokens () { return (this.game && this.game.tokens) || [] }
   get tokensN () { return this.tokens && this.tokens.length }
 
-  handleLocalText (key, evt) { this.setState({ [key]: evt.target.value.trim() })}
+  handleLocalText (key, evt) { this.setState({ [key]: evt.target.value && evt.target.value.trim() })}
   handleNameChange (evt) {
     if (this.game.state.websocket)
       this.game.state.websocket.sendChn(this.game.state.username, evt.target.value);
@@ -27,7 +27,7 @@ class ControlPanel extends React.Component {
 
   addMap () {
     let maps = deepCopy(this.maps);
-    maps.push({url: this.state.newMapUrl.trim()});
+    maps.push({url: this.state.newMapUrl && this.state.newMapUrl.trim()});
     this.game.setState({maps: maps});
   }
 
@@ -167,7 +167,7 @@ class ControlPanel extends React.Component {
           <div>Maps {this.mapsN}</div>
 
           <input onChange={this.handleLocalText.bind(this, 'newMapUrl')} value={this.state.newMapUrl || ''} placeholder='Map URL' />
-          <button onClick={this.addMap.bind(this)}>Add map</button>
+          <button onClick={this.addMap.bind(this)}>Add map (empty url means "whiteboard")</button>
 
           <ol>
             { this.maps.map((map, index) =>

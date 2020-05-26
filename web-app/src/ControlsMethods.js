@@ -53,6 +53,7 @@ class ControlsMethods {
 					this.saveLocalStorage();
 				break;
 			case 'KeyM': toggleSub.bind(this)('showMapsMenu'); break;
+			case 'KeyP': this.setState({tool: 'draw'}); break;
 			case 'KeyT': toggleSub.bind(this)('showTokensMenu'); break;
 			case 'KeyV': /* load json from clipboard */
 				if (evt.shiftKey)
