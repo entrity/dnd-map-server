@@ -128,7 +128,6 @@ class Game extends React.Component {
   }
 
   saveLocalStorage (evt) {
-    console.error('saving...',this.state.maps)
     if (this.state.isInitialLoadFinished)
       localStorage.setItem(this.room, this.toJson());
     else

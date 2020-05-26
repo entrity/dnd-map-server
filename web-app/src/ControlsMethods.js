@@ -85,7 +85,7 @@ class ControlsMethods {
 		if (evt.buttons & 1) {
 			this.mouseDownX = evt.pageX;
 			this.mouseDownY = evt.pageY;
-			if (evt.target.id === 'canvas-map')
+			if (/canvas|html/i.test(evt.target.tagName))
 				this.selectToken(-1, evt);
 			if (this.state.tool === 'fog') this.fogErase(evt.pageX, evt.pageY);
 		}

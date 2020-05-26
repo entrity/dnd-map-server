@@ -20,7 +20,6 @@ class MapMethods {
         img.onload = () => {
           this.resizeCanvases(img.width, img.height);
           ctx.drawImage(img, 0, 0);
-          if (!this.state.isInitialLoadFinished) this.setState({isInitialLoadFinished: true});
           resolve();
         }
         img.onerror = () => {
@@ -59,6 +58,11 @@ class MapMethods {
         .then(this.drawMap.bind(this))
         .then(() => {
           this.loadDrawing(); /* Load drawing's state*/
+          if (!this.state.isInitialLoadFinished) {
+            this.setState({isInitialLoadFinished: true}, () => {
+              NotificationManager.success('Initial load completed');
+            });
+          }
           resolve();
         });
       }));

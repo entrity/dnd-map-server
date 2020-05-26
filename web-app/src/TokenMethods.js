@@ -17,7 +17,7 @@ class TokenMethods {
 
 	isTokenOnMap (token, map) {
 		if (!map) map = this.map;
-		return token && map && (token.all || token[map.name]);
+		return token && map && (token.pc || token.allMaps || token[map.name]);
 	}
 
 	loadTokensForMap (mapName, tokens) {

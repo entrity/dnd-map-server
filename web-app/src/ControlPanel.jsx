@@ -33,7 +33,7 @@ class ControlPanel extends React.Component {
 
   addToken () {
     let tokens = deepCopy(this.tokens);
-    tokens.push({url: this.state.newTokenUrl.trim()});
+    tokens.push({url: this.state.newTokenUrl && this.state.newTokenUrl.trim()});
     this.game.setState({tokens: tokens});
   }
 
@@ -187,7 +187,7 @@ class ControlPanel extends React.Component {
         <div id="tokens-cp">
           <div>Tokens {this.tokensN} {this.game.state.edit} {this.game.state.mapName}</div>
 
-          <input onChange={this.handleLocalText.bind(this, 'newTokenUrl')} value={this.state.newTokenUrl || ''} placeholder='Token name' />
+          <input onChange={this.handleLocalText.bind(this, 'newTokenUrl')} value={this.state.newTokenUrl || ''} placeholder='Token URL' />
           <button onClick={this.addToken.bind(this)}>Add token</button>
 
           <ol>
