@@ -1,5 +1,6 @@
 :root {
 	--z-map: 1;
+	--z-drawing: 2;
 	--z-npc-div: 15;
 	--z-npc-lbl: 16;
 	--z-fog-placeholder: 19;
@@ -41,6 +42,9 @@ canvas {
 }
 #canvas-map {
 	z-index: var(--z-map);
+}
+#pen-drawing {
+	z-index: var(--z-drawing);
 }
 #canvas-fog {
 	z-index: var(--z-fog);

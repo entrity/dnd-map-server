@@ -1,5 +1,5 @@
 import { deepCopy } from './Helper.js';
-import { NotificationContainer, NotificationManager } from 'react-notifications';
+import { NotificationManager } from 'react-notifications';
 import 'react-notifications/lib/notifications.css';
 
 class MapMethods {
