@@ -1,18 +1,8 @@
 import { deepCopy } from './Helper.js';
 
-/*
-	deleteToken (index) {
-		if (index === undefined) {
-			index = this.selectedTokenIndex;
-			delete this.selectedTokenIndex;
-		}
-		let tokens = deepCopy(this.tokens).splice(index, 1);
-		this.updateMap({tokens: tokens});
-	}
-*/
-
 class TokenMethods {
 	dragSelectedTokens (evt) {
+		if (this.state.tool !== 'move') return;
 		let tokens = deepCopy(this.tokens);
 		tokens.forEach(token => {
 			if (token.isSelected) {
@@ -102,7 +92,7 @@ class TokenMethods {
 		/* Multi-select enabled */
 		else
 			select(tokens[index]);
-		this.setState({tokens: tokens});
+		this.setState({tokens: tokens, tool: 'move'});
 	}
 
 	updateToken (attrs, index, noEmit) {
