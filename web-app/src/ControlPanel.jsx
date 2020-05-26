@@ -114,6 +114,9 @@ class ControlPanel extends React.Component {
         <label title="draw size">
           <input type="number" min="1" value={this.game.state.drawSize} onChange={this.handleText.bind(this, 'drawSize')} />
         </label>
+        <span title="clear drawing">
+          <button onClick={this.game.clearDrawing.bind(this.game, true)}>Clear</button>
+        </span>
       </div>
     )
   }

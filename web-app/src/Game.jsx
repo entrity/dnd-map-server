@@ -147,9 +147,10 @@ class Game extends React.Component {
         ['tokens', 'maps', 'mapName', 'radius', 'fogOpacity'].forEach(key => {
           state[key] = data[key];
         });
+        let map = state.maps[Math.max(data.mapIndex, 0)];
         if (!state.radius) state.radius = 33;
         this.setState(state, () => {
-          this.loadMap().then(resolve).catch(reject);
+          this.loadMap(map).then(resolve).catch(reject);
         });
       } catch (ex) {
         console.error(ex);
@@ -168,6 +169,7 @@ class Game extends React.Component {
     if (this.map) {
       this.dumpTokensForMap(this.map.name, data.tokens);
       this.map.drawingUrl = this.dumpDrawing();
+      data['mapIndex'] = this.maps.indexOf(this.map);
     }
     return JSON.stringify(Object.assign(data, additionalAttrs));
   }
@@ -183,19 +185,6 @@ class Game extends React.Component {
 
   handleText (key, evt) { this.setState({[key]: evt.target.value}) }
   handleCheckbox (key, evt) { this.setState({[key]: evt.target.checked}) }
-
-  dumpDrawing () { return this.drawCanvasRef.current.toDataURL('image/jpg', 0.7) }
-  loadDrawing () {
-    let dataUrl = this.map.drawingUrl;
-    if (dataUrl) {
-      let ctx = this.drawCanvasRef.current.getContext('2d');
-      return new Promise((resolve, reject) => {
-          let img = new Image();
-          img.onload = () => { ctx.drawImage(img, 0, 0); resolve() }
-          img.src = dataUrl;
-      });
-    }
-  }
 
   renderTokens () {
     let game = this;
