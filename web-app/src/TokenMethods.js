@@ -92,7 +92,9 @@ class TokenMethods {
 		/* Multi-select enabled */
 		else
 			select(tokens[index]);
-		this.setState({tokens: tokens, tool: 'move'});
+		let state = {tokens: tokens};
+		if (index >= 0) state.tool = 'move';
+		this.setState(state);
 	}
 
 	updateToken (attrs, index, noEmit) {

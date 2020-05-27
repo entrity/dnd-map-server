@@ -6,20 +6,22 @@ class MapMethods {
   drawMap () {
     return new Promise((resolve, reject) => {
       if (!this.map) {
-        NotificationManager.error('Tried to draw map, but `this.map` was missing', 'drawMap')
+        NotificationManager.error(`Tried to draw map, but \`this.map\` was missing (${this.state.mapIndex})`, 'drawMap')
         return reject();
       }
+      this.resizeCanvases();
       const mapCanvas = this.mapCanvasRef.current;
       if (!this.map.url || this.map.url.trim().length === 0) {
-        let w = mapCanvas.width; mapCanvas.width = w; /* clear (reset) canvas */
         resolve();
       } else {
         NotificationManager.info(this.map.url, 'Drawing map', 700);
         const ctx = mapCanvas.getContext('2d');
         let img = new Image();
         img.onload = () => {
-          this.resizeCanvases(img.width, img.height);
-          ctx.drawImage(img, 0, 0);
+          let w = this.map.w || img.width;
+          let h = this.map.h || img.height;
+          this.resizeCanvases(img.width, this.map.h || img.height);
+          ctx.drawImage(img, this.map.x || 0, this.map.y || 0, w, h);
           resolve();
         }
         img.onerror = () => {
@@ -32,32 +34,37 @@ class MapMethods {
     })
   }
 
-  loadMap (map, edit='snapshots') {
+  loadMap (mapIndex) {
     return new Promise((resolve, reject) => {
-      if (!map) map = this.maps[0];
+      if (mapIndex === undefined) mapIndex = this.state.mapIndex || 0;
+      let map = this.maps[mapIndex];
       if (!map) {
-        NotificationManager.error('Attempted to load non-existant map', 'loadMap');
+        NotificationManager.error(`Attempted to load non-existant map ${mapIndex}`, 'loadMap');
         console.error('Attempted to load non-existant map');
-        reject();
+        if (!this.maps.length)
+          reject();
+        else
+          map = this.maps[0];
       }
       /* Dump tokens' states */
-      let oldMap = this.state.map;
+      let oldMap = this.map;
       let tokens = deepCopy(this.tokens);
       if (oldMap && oldMap.name)
         this.dumpTokensForMap(oldMap.name, tokens);
       /* Load tokens' states */
       this.loadTokensForMap(map.name, tokens);
       /* Dump drawing's state */
-      if (oldMap && oldMap.name)
+      if (oldMap && this.state.isInitialLoadFinished)
         oldMap.drawingUrl = this.dumpDrawing();
       /* Set new state */
-      let state = { map: map, edit: edit, fogLoaded: false, tokens: tokens };
-      this.setState(state, ((arg) => {
+      let state = { mapIndex: mapIndex, fogLoaded: false, tokens: tokens };
+      this.setState(state, (() => {
         this.loadFog(this.map && this.map.fogUrl)
         .catch(() => { console.error('failed to loadfog') })
         .then(this.drawMap.bind(this))
         .then(() => {
-          this.loadDrawing(); /* Load drawing's state*/
+          this.loadDrawing(); /* Load pencil drawing's state */
+          /* Finish */
           if (!this.state.isInitialLoadFinished) {
             this.setState({isInitialLoadFinished: true}, () => {
               NotificationManager.success('Initial load completed');
@@ -70,9 +77,11 @@ class MapMethods {
   }
 
   updateMap (idx, attrs) {
-    let maps = deepCopy(this.maps);
-    Object.assign(maps[idx], attrs);
-    this.setState({maps: maps});
+    return new Promise((resolve, reject) => {
+      let maps = deepCopy(this.maps);
+      Object.assign(maps[idx], attrs);
+      this.setState({maps: maps}, () => { resolve(this) });
+    });
   }
 
   dumpDrawing () { return this.drawCanvasRef.current.toDataURL('image/jpg', 0.6) }

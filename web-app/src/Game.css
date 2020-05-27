@@ -45,6 +45,7 @@ canvas {
 }
 #pen-drawing {
 	z-index: var(--z-drawing);
+	border: 1px dashed #ddd;
 }
 #canvas-fog {
 	z-index: var(--z-fog);

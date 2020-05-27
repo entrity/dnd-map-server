@@ -19,7 +19,7 @@ class Game extends React.Component {
   /* Is the current user a dm or a player? */
   get isHost () { return this.params.get('host') && (this.params.get('host') !== '0') }
   get room () { return this.params.get('room') || 'defaultRoom' }
-  get map () { return this.state.map }
+  get map () { return this.state.maps[this.state.mapIndex] }
   get maps () { return this.state.maps || [] }
   get fogOpacity () { return this.isHost ? this.state.fogOpacity : 1 }
   get tokens () { return this.state.tokens }
@@ -57,7 +57,6 @@ class Game extends React.Component {
       pencilColor: '#660066',
       drawSize: 8,
       /* ? */
-      edit: 'pristine',
       maps: [defaultMap, kiwiMap],
       tokens: tokens,
       mapName: 'default',
@@ -100,7 +99,7 @@ class Game extends React.Component {
       this.loadLocalStorage().catch(() => {
         console.log('Attempting to load default map')
         this.loadMap(); /* load default map */
-      });
+      }).then(() => { console.log('...loaded from localStorage') });
     });
   }
 
@@ -143,13 +142,13 @@ class Game extends React.Component {
       try {
         let data = JSON.parse(json);
         let state = {};
-        ['tokens', 'maps', 'mapName', 'radius', 'fogOpacity'].forEach(key => {
+        ['tokens', 'maps', 'mapIndex', 'radius', 'fogOpacity'].forEach(key => {
           state[key] = data[key];
         });
-        let map = state.maps[Math.max(data.mapIndex, 0)];
         if (!state.radius) state.radius = 33;
+        state.mapIndex = parseInt(state.mapIndex);
         this.setState(state, () => {
-          this.loadMap(map).then(resolve).catch(reject);
+          this.loadMap().then(resolve).catch(reject);
         });
       } catch (ex) {
         console.error(ex);
@@ -162,13 +161,12 @@ class Game extends React.Component {
   toJson (additionalAttrs) {
     let game = this;
     let data = {};
-    ['tokens', 'maps', 'mapName', 'radius', 'fogOpacity'].forEach(key => {
+    ['tokens', 'maps', 'mapIndex', 'radius', 'fogOpacity'].forEach(key => {
       data[key] = game.state[key];
     });
     if (this.map) {
       this.dumpTokensForMap(this.map.name, data.tokens);
       this.map.drawingUrl = this.dumpDrawing();
-      data['mapIndex'] = this.maps.indexOf(this.map);
     }
     return JSON.stringify(Object.assign(data, additionalAttrs));
   }
@@ -179,8 +177,6 @@ class Game extends React.Component {
     delete cursors[oldName];
     this.setState({cursors: cursors});
   }
-
-  updateSnapshot (attrs, mapName) { this.updateMap(attrs, mapName, 'snapshots') }
 
   handleText (key, evt) { this.setState({[key]: evt.target.value}) }
   handleCheckbox (key, evt) { this.setState({[key]: evt.target.checked}) }
@@ -210,7 +206,7 @@ class Game extends React.Component {
   render () {
     try {
       return (
-        <div id="wrapper" className={this.state.edit}>
+        <div id="wrapper">
           <NotificationContainer/>
           <canvas id="canvas-map" ref={this.mapCanvasRef} />
           <canvas id="pen-drawing" ref={this.drawCanvasRef} />
@@ -231,8 +227,8 @@ class Game extends React.Component {
   }
 
   resizeCanvases (w, h) {
-    if (!w) w = window.innerWidth;
-    if (!h) h = window.innerHeight;
+    if (!w) w = (this.map && this.map.w) || window.innerWidth;
+    if (!h) h = (this.map && this.map.h) || window.innerHeight;
     let canvases = document.querySelectorAll('canvas');
     if (canvases[0].width !== w || canvases[0].height !== h) {
       console.log('resizing canvases', w, h, this.state.isInitialLoadFinished);
