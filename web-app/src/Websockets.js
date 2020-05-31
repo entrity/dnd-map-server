@@ -2,7 +2,12 @@
 https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
 */
 
-const RETRY_INTERVAL = 1000;
+const RETRY_INTERVAL = 2500;
+
+const K_SOCKET = 'gameWebSocket';
+const K_INTERVAL = 'gameWebSocketInterval';
+
+const socketRoom = () => ( window[K_SOCKET].url.match(/[^/]*$/)[0] )
 
 class GameSocket {
 	constructor (game) {
@@ -16,31 +21,39 @@ class GameSocket {
 		let host = window.location.host.replace(/:\d+$/, '');
 		let room = this.game.room || host.pathname;
 		console.log('Trying to establish websocket connection', host, room);
-		this.ws = new WebSocket(`ws://${host}:8000/${room}`);
+		if (window[K_INTERVAL]) clearInterval(window[K_INTERVAL]);
+		if (window[K_SOCKET]) {
+			let socket = window[K_SOCKET];
+			console.log('Closing extant websocket', socketRoom());
+			delete window[K_SOCKET]; /* Delete, then close, s.t. cb doesn't re-open it */
+			socket.close();
+		}
+		window[K_SOCKET] = new WebSocket(`ws://${host}:8000/${room}`);
 		this.addCallbacks();
 	}
 
 	addCallbacks () {
-		let self = this;
+		let ws = window[K_SOCKET];
 		/* Connection callback */
-		this.ws.addEventListener('open', () => {
-			console.log('WebSocket opened');
-			if (self.timeout) clearTimeout(self.timeout);
+		ws.addEventListener('open', () => {
+			console.log('WebSocket opened', socketRoom());
+			if (window[K_INTERVAL]) clearInterval(window[K_INTERVAL]);
+			if (!this.game.isHost) this.sendReq();
 		});
 		/* Message callback */
-		this.ws.addEventListener('message', this.receive.bind(this));
+		ws.addEventListener('message', this.receive.bind(this));
 		/* Closed callback */
-		this.ws.addEventListener('close', () => {
-			console.log(`WebSocket closed. Retrying in ${RETRY_INTERVAL}`);
-			delete self.ws;
-			self.timeout = setTimeout(self.setup.bind(self), RETRY_INTERVAL);
+		let setup = this.setup.bind(this);
+		ws.addEventListener('close', () => {
+			console.error(`WebSocket closed. Will retry in ${RETRY_INTERVAL}`);
+			window[K_INTERVAL] = setInterval(setup, RETRY_INTERVAL);
 		});
 	}
 
 	/* Send message to server*/
 	send (data) {
-		if (this.ws && this.ws.readyState === 1)
-			this.ws.send(JSON.stringify(data));
+		if (window[K_SOCKET] && window[K_SOCKET].readyState === WebSocket.OPEN)
+			window[K_SOCKET].send(JSON.stringify(data));
 		else
 			console.error('no websock');
 	}
@@ -56,7 +69,7 @@ class GameSocket {
 	/* Move cursor */
 	cur (opts) {
 		if (opts.name !== this.game.state.username)
-			this.game.updateCur(opts.x, opts.y, opts.name, true)
+			this.game.updateCur(opts.x, opts.y, opts.name);
 	}
 	sendCur (x, y) { this.send({typ: 'cur', x: x, y: y, name: this.game.state.username}) }
 	/* Erase fog */
