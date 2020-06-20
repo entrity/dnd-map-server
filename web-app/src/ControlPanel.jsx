@@ -153,16 +153,6 @@ class ControlPanel extends React.Component {
       return this.renderHudToggle();
   }
 
-  renderSelectedTokens () {
-    return (
-      <div>{this.game.tokens.map((token, idx) =>
-        (token.isSelected && this.game.isTokenOnMap(token))
-        ? <CpToken key={idx} index={idx} token={token} game={this.game}/>
-        : null
-      )}</div>
-    )
-  }
-
   renderMaps () {
     if (this.game.state.showMapsMenu)
       return (
@@ -181,8 +171,20 @@ class ControlPanel extends React.Component {
       );
   }
 
+  renderSelectedTokens () {
+    /* Don't render this (redundant controls) if the 'tokens' menu is open */
+    if (!this.game.state.showTokensMenu)
+    return (
+      <div>{this.game.tokens.map((token, idx) =>
+        (token.isSelected && this.game.isTokenOnMap(token))
+        ? <CpToken key={idx} index={idx} token={token} game={this.game}/>
+        : null
+      )}</div>
+    )
+  }
+
   renderTokens () {
-    if (this.game.state.showTokensMenu && !this.game.token)
+    if (this.game.state.showTokensMenu)
       return (
         <div id="tokens-cp">
           <div>Tokens {this.tokensN} {this.game.state.edit} {this.game.state.mapName}</div>
