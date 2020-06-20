@@ -1,5 +1,7 @@
 import React from 'react';
 
+/* Used for fog and draw. Should be not-displayed when tool is 'move' */
+
 class Overlay extends React.Component {
   constructor (props) {
     super(props);
@@ -84,7 +86,10 @@ class Overlay extends React.Component {
   }
 
   render () {
-    return (<canvas id="overlay" ref={this.myRef} />);
+    if (this.game.state.tool == 'move')
+      return null;
+    else
+      return (<canvas id="overlay" ref={this.myRef} />);
   }
 }
 
