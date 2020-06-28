@@ -36,6 +36,8 @@ class Game extends React.Component {
     this.fogRef = React.createRef();
     this.drawingRef = React.createRef();
     this.state = {
+      fogOpacity: 0.5,
+      fogUrl: undefined, /* data url */
       isFogLoaded: false,
       showMapsMenu: false,
       showTokensMenu: false,
@@ -45,9 +47,6 @@ class Game extends React.Component {
 
   componentDidMount () {
     this._development().then(() => {
-      console.log('dev loadlaoded', this);
-      // console.log(this.state.maps[1])
-      // console.log(this.state.maps[2])
       this.loadMap(this.state.maps[2]);
     })
     // window.addEventListener('beforeunload', this.saveLocalStorage.bind(this));
@@ -76,10 +75,23 @@ class Game extends React.Component {
 
   loadMap (map) {
     return new Promise((resolve, reject) => {
-      this.setState({mapId: (map || this.map).$id}, () => {
+      const newStateAttrs = {
+        mapId: (map || this.map).$id,
+        isFogLoaded: false,
+      };
+      this.setState(newStateAttrs, () => {
+        /* Load bg first because that resizes the canvases */
         this.bgRef.current.load().then(() => {
-          this.fogRef.current.load();
-          this.setState({isFirstLoadDone: true});
+          Promise.all([
+            this.fogRef.current.load(),
+            this.drawingRef.current.load(),
+          ]).then(() => {
+            console.log('first load is done')
+            this.setState({
+              isFirstLoadDone: true,
+              isFogLoaded: true,
+            });
+          });
         });
       });
     });
@@ -100,9 +112,9 @@ class Game extends React.Component {
   render () {
     try {
       return (
-        <div id="wrapper">
+        <div id="game">
           <Background game={this} ref={this.bgRef} />
-          <div className={this.state.fogLoaded || 'gone'}>
+          <div className={this.state.isFogLoaded ? '' : 'gone'}>
             <Drawing game={this} ref={this.drawingRef} />
             <Fog game={this} ref={this.fogRef} />
             {this.renderTokens()}

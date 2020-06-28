@@ -1,47 +1,26 @@
 import React from 'react';
+import Canvas from './Canvas.jsx';
 
-class Background extends React.Component {
-
-  constructor (props) {
-    super(props);
-    this.canvasRef = React.createRef();
-  }
-
-  get map () { return this.props.game.map }
+class Background extends Canvas {
 
   load () {
     console.log('bg load', this.map);
-    return new Promise((resolve, reject) => {
+    if (!this.map) {
       /* Handle missing map */
-      if (!this.map) {
-        // NotificationManager.error(`Tried to draw map, but \`this.map\` was missing (${this.state.mapId})`, 'drawMap')
-        console.error('no map');
-        return reject();
-      }
-      this.resizeCanvases();
-      /* Handle 'whiteboard' (no bg img) */
-      if (!this.map.url || this.map.url.trim().length === 0)
-        resolve(this.map.w, this.map.h);
-      /* Handle map with background */
-      else {
-        // NotificationManager.info(this.map.url, 'Drawing map', 700);
-        const ctx = this.canvasRef.current.getContext('2d');
-        let img = new Image();
-        img.onload = () => {
-          let w = this.map.w || img.width;
-          let h = this.map.h || img.height;
-          this.resizeCanvases(w, h);
-          ctx.drawImage(img, this.map.x || 0, this.map.y || 0, w, h);
-          resolve(w, h);
-        }
-        img.onerror = () => {
-          // NotificationManager.error(`${img.src && img.src.substr(0,155)}...`, 'drawMap: bad url');
-          console.error(`Unable to draw image`, img.src);
-          reject();
-        }
-        img.src = this.map.url;
-      }
-    })
+      console.error('no map');
+      // NotificationManager.error(`Tried to draw map, but \`this.map\` was missing (${this.state.mapId})`, 'drawMap')
+      return Promise.reject();
+    }
+    /* Handle 'whiteboard' (no bg img) */
+    if (!this.map.url || this.map.url.trim().length === 0)
+      return Promise.resolve(this.map.w, this.map.h);
+    /* Handle map with background */
+    else
+      return this.drawImage(this.map.url);
+  }
+
+  buildDataUrl () {
+    throw new Error('not implemented');
   }
 
   onClick () {

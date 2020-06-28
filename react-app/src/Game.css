@@ -44,7 +44,7 @@ canvas#bg {
 	z-index: var(--z-map);
 }
 canvas#drawing {
-	z-index: var(--z-drawing);
+	z-index: 33;
 	border: 1px dashed #ddd;
 }
 canvas#fog {
