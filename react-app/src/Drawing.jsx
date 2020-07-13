@@ -4,7 +4,7 @@ import Canvas from './Canvas.jsx';
 class Drawing extends Canvas {
 
   load () {
-    const dataUrl = this.gameState.drawUrl;
+    const dataUrl = this.props.game.map.drawUrl;
     if (dataUrl)
       return this.drawImage(dataUrl);
     else

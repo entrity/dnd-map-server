@@ -15,13 +15,15 @@ class Game extends React.Component {
     this.fogRef = React.createRef();
     this.drawRef = React.createRef();
     this.state = {
+      maps: {},
       isHost: true, /* todo */
       fogOpacity: 0.5,
       fogUrl: undefined, /* data url */
       isFogLoaded: false,
-      showMapsMenu: false,
-      showTokensMenu: false,
       isFirstLoadDone: false, /* Ensure we don't overwrite localStorage before load is done */
+      drawColor: 'purple',
+      drawSize: 44,
+      tool: 'draw',
       room: params.get('room') || 'defaultRoom',
     };
   }
@@ -77,8 +79,8 @@ class Game extends React.Component {
 
   onResize () { this.loadMap(null, true) }
 
-  /* From playarea to state */
-  saveMap () {
+  /* Copy maps and dump current map, suitable for save to state or localStorage */
+  dumpMaps () {
     let mapId = this.state.mapId;
     /* Infer map id if it's not set */
     if (undefined === mapId) mapId = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
@@ -87,8 +89,13 @@ class Game extends React.Component {
     if (!map) return Promise.resolve(); /* Map may have been deleted*/
     map.fogUrl = this.fogRef.current.buildDataUrl();
     map.drawUrl = this.drawRef.current.buildDataUrl();
+    return mapsCopy;
+  }
+
+  /* From playarea to state */
+  saveMap () {
     return new Promise((resolve, reject) => {      
-      this.setState({ maps: mapsCopy }, resolve);
+      this.setState({ maps: this.dumpMaps() }, resolve);
     });
   }
 
@@ -121,7 +128,7 @@ class Game extends React.Component {
 
   toJson () {
     return JSON.stringify({
-      maps: this.state.maps,
+      maps: this.dumpMaps(),
       mapId: this.map && this.map.$id,
       tokens: this.state.tokens,
     });
@@ -129,7 +136,7 @@ class Game extends React.Component {
 
   fromJson (json) {
     const overrides = {};
-    const data = Object.assign(JSON.parse(json), overrides);
+    const data = Object.assign(JSON.parse(json)||{}, overrides);
     return new Promise(resolve => {
       this.setState(data, () => resolve(this.loadMap()));
     });
@@ -170,7 +177,7 @@ class Game extends React.Component {
             <Fog game={this} ref={this.fogRef} />
             {this.renderTokens()}
             {this.renderCursors()}
-            <Overlay game={this} />
+            <Overlay game={this} />{/* Holds outline for fog & draw tools */}
           </div>
           <ControlPanel game={this} />
         </div>

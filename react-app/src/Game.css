@@ -55,8 +55,8 @@ canvas {
 canvas#bg {
 	z-index: var(--z-map);
 }
-canvas#drawing {
-	z-index: 33;
+canvas#draw {
+	z-index: var(--z-drawing);
 	border: 1px dashed #ddd;
 }
 canvas#fog {
@@ -78,7 +78,7 @@ canvas#fog {
 	text-shadow: 1px 1px white;
 }
 canvas#overlay { z-index: var(--z-overlay); }
-div.token.pc {z-index: var(--z-pc-img); }
+div.token.pc { z-index: var(--z-pc-img); }
 div.token.pc .label { z-index: var(--z-pc-lbl) }
 div.token.npc { z-index: var(--z-npc-div); }
 div.token.npc .label { z-index: var(--z-npc-lbl) }

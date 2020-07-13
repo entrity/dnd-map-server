@@ -1,14 +1,14 @@
 import React from 'react';
 
 function Button(props) {
-  const {title, value, onClick, isSelected, ..._} = props;
-  return <button title={title} onClick={onClick} className={isSelected ? 'selected' : null}><span role="img" aria-label={title}>{value}</span></button>;  
+  const {title, value, onClick, isSelected, style, disabled, ..._} = props;
+  return <button title={title} onClick={onClick} className={isSelected ? 'selected' : null} style={style} disabled={disabled}><span role="img" aria-label={title}>{value}</span></button>;
 }
 
 function ToolButton(props) {
   const {cp, title, value, game, ..._} = props;
   const isSelected = title === cp.props.game.state.tool;
-  const onClick = cp.setTool.bind(cp, title);
+  const onClick = cp.setGameState.bind(cp, 'tool', title);
   return <Button title={title} value={props.value.toString()} onClick={onClick} isSelected={isSelected} />;
 }
 
@@ -64,7 +64,7 @@ class ControlPanel extends React.Component {
 
   get tool () { return this.props.game.state.tool }
 
-  setTool (tool) { this.props.game.setState({tool: tool}) }
+  setGameState (key, value) { this.props.game.setState({[key]: value}) }
 
   onTextChange (key, evt) { this.setState({[key]: evt.target.value}) }
 
@@ -106,8 +106,11 @@ class ControlPanel extends React.Component {
     switch (this.tool) {
       case 'draw':
         return (<span>
-          <Button title="erase" value="&#x1f9fd;" />
-          <Button title="draw" value="&#x1f58d;" />
+          <Button title="eraser" value="&#x1f9fd;" onClick={this.setGameState.bind(this, 'subtool', 'eraser')} isSelected={game.state.subtool === 'eraser'} />
+          <Button title="pencil" value="&#x1f58d;" onClick={this.setGameState.bind(this, 'subtool', 'pencil')} isSelected={game.state.subtool === 'pencil'} />
+          <input size="3" title="draw size" value={game.state.drawSize} onChange={this.onTextChange.bind(game, 'drawSize')} type="number" step="5" />
+          <input size="3" title="draw color" value={game.state.drawColor} onChange={this.onTextChange.bind(game, 'drawColor')} />
+          <Button style={{backgroundColor: game.state.drawColor}} value="&#x1f58c;" disabled />
         </span>)
       case 'move':
         return null;
@@ -122,6 +125,7 @@ class ControlPanel extends React.Component {
   }
 
   renderMaps () {
+    if (!this.state.toggleOnMaps) return null;
     const maps = this.props.game.state.maps;
     const keys = maps && Object.keys(maps);
     return (<div>
