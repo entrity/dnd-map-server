@@ -6,12 +6,15 @@ class Canvas extends React.Component {
     this.canvasRef = React.createRef();
   }
 
+  buildDataUrl () { return this.getCanvas().toDataURL('image/webp', 0.25) }
+
   get gameState () { return this.props.game.state }
   get h () { return this.getCanvas().height }
   get map () { return this.props.game.map }
   get w () { return this.getCanvas().width }
 
   getCanvas () { return this.canvasRef.current }
+
   getContext () { return this.getCanvas().getContext('2d') }
 
   drawImage (url) {

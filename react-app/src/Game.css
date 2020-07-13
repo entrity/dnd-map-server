@@ -33,6 +33,18 @@ canvas, #control-panel {
 	background: rgba(255,255,255,0.5);
 }
 #control-panel input[type=number] { width: 40px; }
+#control-panel button {
+	background: grey;
+  font-family: "Noto Color Emoji";
+	font-size: 16pt;
+	margin: 2px;
+}
+#tools button.selected {
+	border: 3px dashed yellow;
+}
+#toggles button.selected {
+	border: 3px dashed #00bb00;
+}
 
 canvas {
 	position: absolute;

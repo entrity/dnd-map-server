@@ -32,16 +32,19 @@ class Game extends React.Component {
   constructor (props) {
     super(props);
     window.game = this;
+    const params = new URLSearchParams(window.location.href.replace(/.*\?/, ''));
     this.bgRef = React.createRef();
     this.fogRef = React.createRef();
-    this.drawingRef = React.createRef();
+    this.drawRef = React.createRef();
     this.state = {
+      isHost: true, /* todo */
       fogOpacity: 0.5,
       fogUrl: undefined, /* data url */
       isFogLoaded: false,
       showMapsMenu: false,
       showTokensMenu: false,
       isFirstLoadDone: false, /* Ensure we don't overwrite localStorage before load is done */
+      room: params.get('room') || 'defaultRoom',
     };
   }
 
@@ -49,8 +52,8 @@ class Game extends React.Component {
     this._development().then(() => {
       this.loadMap(this.state.maps[2]);
     })
-    // window.addEventListener('beforeunload', this.saveLocalStorage.bind(this));
-    // window.addEventListener('resize', this.drawMap.bind(this));
+    window.addEventListener('beforeunload', this.saveToLocalStorage.bind(this));
+    window.addEventListener('resize', this.onResize.bind(this));
     // this.addControlsCallbacks();
     // this.mapCanvasRef.current.addEventListener('click', ((evt) => {
     //   this.setState({showMapsMenu: false});
@@ -67,34 +70,74 @@ class Game extends React.Component {
   }
 
   componentWillUnmount () {
-    // window.removeEventListener('beforeunload', this.saveLocalStorage.bind(this));
-    // window.removeEventListener('resize', this.drawMap.bind(this));
+    console.log('unmounting', this)
+    window.removeEventListener('beforeunload', Game.saveLocalStorage.bind(this));
+    // window.removeEventListener('resize', Game.onResize.bind(this));
     // this.removeControlsCallbacks();
-    // this.saveLocalStorage();
+    this.saveLocalStorage();
   }
 
-  loadMap (map) {
-    return new Promise((resolve, reject) => {
-      const newStateAttrs = {
-        mapId: (map || this.map).$id,
-        isFogLoaded: false,
-      };
-      this.setState(newStateAttrs, () => {
-        /* Load bg first because that resizes the canvases */
-        this.bgRef.current.load().then(() => {
-          Promise.all([
-            this.fogRef.current.load(),
-            this.drawingRef.current.load(),
-          ]).then(() => {
-            console.log('first load is done')
-            this.setState({
-              isFirstLoadDone: true,
-              isFogLoaded: true,
+  onResize () { this.loadMap(null, true) }
+
+  /* From playarea to state */
+  saveMap () {
+    const mapsCopy = JSON.parse(JSON.stringify(this.state.maps));
+    const map = mapsCopy[this.state.mapId];
+    map.fogUrl = this.fogRef.current.buildDataUrl();
+    map.drawUrl = this.drawRef.current.buildDataUrl();
+    return new Promise((resolve, reject) => {      
+      this.setState({ maps: mapsCopy }, resolve);
+    });
+  }
+
+  /* From state to playarea */
+  loadMap (map, skipSave) {
+    if (!map) map = this.map;
+    if (!map) return Promise.reject('no map');
+    const needsSave = this.state.isFirstLoadDone && !skipSave;
+    const savePromise = needsSave ? this.saveMap() : Promise.resolve();
+    return savePromise.then(() => {
+      return new Promise((resolve, reject) => {
+        const startStateAttrs = { mapId: map.$id, isFogLoaded: false };
+        const finishStateAttrs = { isFirstLoadDone: true, isFogLoaded: true };
+        this.setState(startStateAttrs, () => {
+          /* Load bg first because that resizes the canvases */
+          this.bgRef.current.load().then(() => {
+            Promise.all([
+              this.fogRef.current.load(),
+              this.drawRef.current.load(),
+            ]).then(() => {
+              this.setState(finishStateAttrs);
             });
           });
         });
       });
     });
+  }
+
+  toJson () {
+    return JSON.stringify({
+      maps: this.state.maps,
+      mapId: this.map && this.map.$id,
+      tokens: this.state.tokens,
+    });
+  }
+
+  fromJson (json) {
+    const overrides = {};
+    const data = Object.assign(JSON.parse(json), overrides);
+    return new Promise(resolve => {
+      this.setState(data, () => resolve(this.loadMap()));
+    });
+  }
+
+  saveToLocalStorage () {
+    if (this.state.isFirstLoadDone)
+      localStorage.set(this.state.room, this.toJson());
+  }
+
+  loadFromLocalStorage () {
+    return this.fromJson(localStorage.get(this.state.room));
   }
 
   get map () {
@@ -115,7 +158,7 @@ class Game extends React.Component {
         <div id="game">
           <Background game={this} ref={this.bgRef} />
           <div className={this.state.isFogLoaded ? '' : 'gone'}>
-            <Drawing game={this} ref={this.drawingRef} />
+            <Drawing game={this} ref={this.drawRef} />
             <Fog game={this} ref={this.fogRef} />
             {this.renderTokens()}
             {this.renderCursors()}
@@ -127,7 +170,7 @@ class Game extends React.Component {
     } catch (ex) {
       console.error(ex);
       console.error('Exception in `render`. Clearing localStorage...');
-      localStorage.removeItem(this.room);
+      localStorage.removeItem(this.state.room);
     }
   }
 

@@ -4,7 +4,6 @@ import Canvas from './Canvas.jsx';
 class Background extends Canvas {
 
   load () {
-    console.log('bg load', this.map);
     if (!this.map) {
       /* Handle missing map */
       console.error('no map');
@@ -17,10 +16,6 @@ class Background extends Canvas {
     /* Handle map with background */
     else
       return this.drawImage(this.map.url);
-  }
-
-  buildDataUrl () {
-    throw new Error('not implemented');
   }
 
   onClick () {
