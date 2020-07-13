@@ -18,13 +18,19 @@ class Canvas extends React.Component {
   getContext () { return this.getCanvas().getContext('2d') }
 
   drawImage (url) {
+    /* Handle 'whiteboard' (no bg img) */
+    if (!url || url.trim().length === 0) {
+      if (this.resizeCanvases) this.resizeCanvases(); /* Clear canvas */
+      return Promise.resolve(this.map.w, this.map.h);
+    }
+    /* Handle ordinary image */
     return new Promise((resolve, reject) => {
       const ctx = this.getContext();
       const img = new Image();
       img.onload = () => {
         let w = this.map.w || img.width;
         let h = this.map.h || img.height;
-        this.resizeCanvases(w, h);
+        if (this.resizeCanvases) this.resizeCanvases(w, h);
         ctx.drawImage(img, this.map.x || 0, this.map.y || 0, w, h);
         resolve(w, h);
       }

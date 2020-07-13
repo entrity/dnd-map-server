@@ -10,12 +10,7 @@ class Background extends Canvas {
       // NotificationManager.error(`Tried to draw map, but \`this.map\` was missing (${this.state.mapId})`, 'drawMap')
       return Promise.reject();
     }
-    /* Handle 'whiteboard' (no bg img) */
-    if (!this.map.url || this.map.url.trim().length === 0)
-      return Promise.resolve(this.map.w, this.map.h);
-    /* Handle map with background */
-    else
-      return this.drawImage(this.map.url);
+    return this.drawImage(this.map.url);
   }
 
   onClick () {
@@ -31,11 +26,11 @@ class Background extends Canvas {
       if (!h) h = (this.map && this.map.h) || window.innerHeight;
       let canvases = document.querySelectorAll('canvas');
       if (canvases[0].width === w || canvases[0].height === h)
-        resolve();
+        resolve(w, h);
       else
         this.props.game.setState({ w: w, h: h, isFogLoaded: false }, () => {
           canvases.forEach(canvas => { canvas.width = w; canvas.height = h; });
-          resolve();
+          resolve(w, h);
         });
     });
   }

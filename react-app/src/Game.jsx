@@ -7,7 +7,53 @@ import ControlPanel from './ControlPanel.jsx';
 
 class Game extends React.Component {
 
-  _development () {
+  constructor (props) {
+    super(props);
+    window.game = this;
+    const params = new URLSearchParams(window.location.href.replace(/.*\?/, ''));
+    this.bgRef = React.createRef();
+    this.fogRef = React.createRef();
+    this.drawRef = React.createRef();
+    this.state = {
+      isHost: true, /* todo */
+      fogOpacity: 0.5,
+      fogUrl: undefined, /* data url */
+      isFogLoaded: false,
+      showMapsMenu: false,
+      showTokensMenu: false,
+      isFirstLoadDone: false, /* Ensure we don't overwrite localStorage before load is done */
+      room: params.get('room') || 'defaultRoom',
+    };
+  }
+
+  componentDidMount () {
+    this.loadFromLocalStorage();
+    window.addEventListener('beforeunload', this.saveToLocalStorage.bind(this));
+    window.addEventListener('resize', this.onResize.bind(this));
+    // this.addControlsCallbacks();
+    // this.mapCanvasRef.current.addEventListener('click', ((evt) => {
+    //   this.setState({showMapsMenu: false});
+    //   this.setState({showTokensMenu: false});
+    // }));
+    // this.setState({fogLoaded: false}, () => {
+    //   console.log('Attempting to load from localStorage')
+    //   /* load map from storage, if any */
+    //   this.loadLocalStorage().catch(() => {
+    //     console.log('Attempting to load default map')
+    //     this.loadMap(); /* load default map */
+    //   }).then(() => { console.log('...loaded from localStorage') });
+    // });
+  }
+
+  componentWillUnmount () {
+    console.log('unmounting', this)
+    window.removeEventListener('beforeunload', this.saveToLocalStorage.bind(this));
+    window.removeEventListener('resize', this.onResize.bind(this));
+    // this.removeControlsCallbacks();
+    this.saveToLocalStorage();
+  }
+
+  initAsDev () {
     let tokens = [
       {name: 'bar', pc: 0, all: true},
       {name: 'foo', url: '/belmont.jpg', all: true},
@@ -29,60 +75,16 @@ class Game extends React.Component {
     });
   }
 
-  constructor (props) {
-    super(props);
-    window.game = this;
-    const params = new URLSearchParams(window.location.href.replace(/.*\?/, ''));
-    this.bgRef = React.createRef();
-    this.fogRef = React.createRef();
-    this.drawRef = React.createRef();
-    this.state = {
-      isHost: true, /* todo */
-      fogOpacity: 0.5,
-      fogUrl: undefined, /* data url */
-      isFogLoaded: false,
-      showMapsMenu: false,
-      showTokensMenu: false,
-      isFirstLoadDone: false, /* Ensure we don't overwrite localStorage before load is done */
-      room: params.get('room') || 'defaultRoom',
-    };
-  }
-
-  componentDidMount () {
-    this._development().then(() => {
-      this.loadMap(this.state.maps[2]);
-    })
-    window.addEventListener('beforeunload', this.saveToLocalStorage.bind(this));
-    window.addEventListener('resize', this.onResize.bind(this));
-    // this.addControlsCallbacks();
-    // this.mapCanvasRef.current.addEventListener('click', ((evt) => {
-    //   this.setState({showMapsMenu: false});
-    //   this.setState({showTokensMenu: false});
-    // }));
-    // this.setState({fogLoaded: false}, () => {
-    //   console.log('Attempting to load from localStorage')
-    //   /* load map from storage, if any */
-    //   this.loadLocalStorage().catch(() => {
-    //     console.log('Attempting to load default map')
-    //     this.loadMap(); /* load default map */
-    //   }).then(() => { console.log('...loaded from localStorage') });
-    // });
-  }
-
-  componentWillUnmount () {
-    console.log('unmounting', this)
-    window.removeEventListener('beforeunload', Game.saveLocalStorage.bind(this));
-    // window.removeEventListener('resize', Game.onResize.bind(this));
-    // this.removeControlsCallbacks();
-    this.saveLocalStorage();
-  }
-
   onResize () { this.loadMap(null, true) }
 
   /* From playarea to state */
   saveMap () {
+    let mapId = this.state.mapId;
+    /* Infer map id if it's not set */
+    if (undefined === mapId) mapId = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
     const mapsCopy = JSON.parse(JSON.stringify(this.state.maps));
-    const map = mapsCopy[this.state.mapId];
+    const map = mapsCopy[mapId];
+    if (!map) return Promise.resolve(); /* Map may have been deleted*/
     map.fogUrl = this.fogRef.current.buildDataUrl();
     map.drawUrl = this.drawRef.current.buildDataUrl();
     return new Promise((resolve, reject) => {      
@@ -94,10 +96,12 @@ class Game extends React.Component {
   loadMap (map, skipSave) {
     if (!map) map = this.map;
     if (!map) return Promise.reject('no map');
+    if (undefined === map.$id) map.$id = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
     const needsSave = this.state.isFirstLoadDone && !skipSave;
     const savePromise = needsSave ? this.saveMap() : Promise.resolve();
     return savePromise.then(() => {
       return new Promise((resolve, reject) => {
+        console.log('loading $id', map.$id);
         const startStateAttrs = { mapId: map.$id, isFogLoaded: false };
         const finishStateAttrs = { isFirstLoadDone: true, isFogLoaded: true };
         this.setState(startStateAttrs, () => {
@@ -132,12 +136,15 @@ class Game extends React.Component {
   }
 
   saveToLocalStorage () {
-    if (this.state.isFirstLoadDone)
-      localStorage.set(this.state.room, this.toJson());
+    if (this.state.isFirstLoadDone) {
+      console.log('Saving game to local storage');
+      localStorage.setItem(this.state.room, this.toJson());
+    }
   }
 
   loadFromLocalStorage () {
-    return this.fromJson(localStorage.get(this.state.room));
+    console.log('Loading game from local storage');
+    return this.fromJson(localStorage.getItem(this.state.room));
   }
 
   get map () {
@@ -153,11 +160,12 @@ class Game extends React.Component {
   }
 
   render () {
+    const goneKlass = this.state.isFogLoaded ? null : 'gone';
     try {
       return (
         <div id="game">
-          <Background game={this} ref={this.bgRef} />
-          <div className={this.state.isFogLoaded ? '' : 'gone'}>
+          <Background game={this} ref={this.bgRef} className={goneKlass} />
+          <div className={goneKlass}>
             <Drawing game={this} ref={this.drawRef} />
             <Fog game={this} ref={this.fogRef} />
             {this.renderTokens()}

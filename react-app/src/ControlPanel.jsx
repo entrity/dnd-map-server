@@ -20,9 +20,7 @@ function ToggleButton(props) {
   return <Button title={title} value={value} onClick={onClick} isSelected={isSelected} />;
 }
 
-class Map extends React.Component {
-  get map () { return this.props.game.state.maps[this.props.mapId] }
-
+class MapConfig extends React.Component {
   onTextChange (key, evt) {
     const game = this.props.game;
     const mapsCopy = JSON.parse(JSON.stringify(game.state.maps));
@@ -30,27 +28,28 @@ class Map extends React.Component {
     game.setState({maps: mapsCopy});
   }
 
-  load () { this.props.game.loadMap(this.map) }
+  load () { this.props.game.loadMap(this.props.map) }
 
   delete () {
-    if (prompt('Delete map?')) {
+    if (window.confirm('Delete map?')) {
       const game = this.props.game;
       const mapsCopy = JSON.parse(JSON.stringify(game.state.maps));
       delete mapsCopy[this.props.mapId];
       const newState = {maps: mapsCopy};
-      if (game.mapId === this.props.mapId)
+      if (game.state.mapId === this.props.mapId)
         newState.mapId = Object.keys(newState.maps)[0];
       game.setState(newState);
     }
   }
 
   render () {
+    if (!this.props.map) return null;
     const game = this.props.game
     const isSelected = game.state.mapId === this.props.mapId;
     return <div className={isSelected ? 'selected' : null}>
-      {this.props.mapId}
-      <input value={this.map.name} placeholder="Map name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
-      <input value={this.map.url} placeholder="Map url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
+      {this.props.mapId} {this.props.map.$id}
+      <input value={this.props.map.name||''} placeholder="Map name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
+      <input value={this.props.map.url||''} placeholder="Map url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
       <Button title="Load map" value="&#x1f23a;" onClick={this.load.bind(this)} />
       <Button title="Delete map" value="&#x1f5d1;" onClick={this.delete.bind(this)} />
     </div>
@@ -72,7 +71,7 @@ class ControlPanel extends React.Component {
   createMap () {
     const game = this.props.game;
     const mapsCopy = JSON.parse(JSON.stringify(game.state.maps));
-    const mapId = Object.keys(mapsCopy).length + 1;
+    const mapId = 1 + Object.keys(mapsCopy).reduce((m, x) => Math.max(m, x), 0);
     const newMap = {name: this.state.newMapName, $id: mapId};
     mapsCopy[mapId] = newMap;
     game.setState({maps: mapsCopy});
@@ -80,6 +79,12 @@ class ControlPanel extends React.Component {
   }
 
   resetFog () { /*todo*/ }
+
+  setFogOpacity (evt) {
+    const newOpacity = evt.target.value;
+    if (!isNaN(newOpacity))
+      this.props.game.setState({fogOpacity: newOpacity});
+  }
 
   renderToolSelect () {
     return (<span id="tools">
@@ -97,6 +102,7 @@ class ControlPanel extends React.Component {
   }
 
   renderToolControls () {
+    const game = this.props.game;
     switch (this.tool) {
       case 'draw':
         return (<span>
@@ -108,7 +114,8 @@ class ControlPanel extends React.Component {
       case 'fog':
         return (<span>
           <Button title="reset fog" onClick={this.resetFog.bind(this)} value="&#x1f300;" />
-          <input size="3" title="fog diameter" value={this.state.fogDiameter} onChange={this.onTextChange.bind(this, 'fogDiameter')} type="number" />
+          <input size="3" title="fog diameter" step="5" value={this.state.fogDiameter} onChange={this.onTextChange.bind(this, 'fogDiameter')} type="number" />
+          <input size="3" title="fog opacity" step="0.05" min="0" max="1" value={game.state.fogOpacity} onChange={this.setFogOpacity.bind(this)} type="number" />
         </span>);
       default: return null;
     }
@@ -120,10 +127,10 @@ class ControlPanel extends React.Component {
     return (<div>
       <hr />
       <div>
-        <input placeholder="Map name" onChange={this.onTextChange.bind(this, 'newMapName')} />
+        <input placeholder="New map name (optional)" onChange={this.onTextChange.bind(this, 'newMapName')} />
         <Button title="Create new map" value="&#x2795;" onClick={this.createMap.bind(this)} />
         {keys && keys.map((mapId, $i) => (
-          <Map key={`map${$i}`} mapId={mapId} game={this.props.game} />
+          <MapConfig key={`map${$i}`} mapId={mapId} map={maps[mapId]} game={this.props.game} />
         ))}
       </div>
     </div>)
@@ -137,7 +144,10 @@ class ControlPanel extends React.Component {
   }
 
   render () {
+    const game = this.props.game;
     return (<div id="control-panel">
+      <Button title="Redo as dev" value="&#x1f530;" onClick={game.initAsDev.bind(game)} />
+      |||
       {this.renderToggles()}
       |||
       {this.renderToolSelect()}
