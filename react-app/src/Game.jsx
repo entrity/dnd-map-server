@@ -19,11 +19,12 @@ class Game extends React.Component {
       isHost: true, /* todo */
       fogOpacity: 0.5,
       fogUrl: undefined, /* data url */
+      fogRadius: 33,
       isFogLoaded: false,
       isFirstLoadDone: false, /* Ensure we don't overwrite localStorage before load is done */
       drawColor: 'purple',
       drawSize: 44,
-      tool: 'draw',
+      tool: 'fog',
       room: params.get('room') || 'defaultRoom',
     };
   }

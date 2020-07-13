@@ -78,7 +78,7 @@ class ControlPanel extends React.Component {
     this.setState({newMapName: undefined});
   }
 
-  resetFog () { /*todo*/ }
+  resetFog () { this.props.game.fogRef.current.fill(); }
 
   setFogOpacity (evt) {
     const newOpacity = evt.target.value;
@@ -117,7 +117,7 @@ class ControlPanel extends React.Component {
       case 'fog':
         return (<span>
           <Button title="reset fog" onClick={this.resetFog.bind(this)} value="&#x1f300;" />
-          <input size="3" title="fog diameter" step="5" value={this.state.fogDiameter} onChange={this.onTextChange.bind(this, 'fogDiameter')} type="number" />
+          <input size="3" title="fog radius" step="5" value={game.state.fogRadius||0} onChange={this.onTextChange.bind(game, 'fogRadius')} type="number" />
           <input size="3" title="fog opacity" step="0.05" min="0" max="1" value={game.state.fogOpacity} onChange={this.setFogOpacity.bind(this)} type="number" />
         </span>);
       default: return null;

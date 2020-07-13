@@ -9,6 +9,19 @@ class Overlay extends Canvas {
 
   /* Get drawing context (different from this component's context) */
   get drawCtx () { return this.props.game.drawRef.current.canvasRef.current.getContext('2d') }
+  get fogCtx () { return this.props.game.fogRef.current.canvasRef.current.getContext('2d') }
+
+  fogErase (x, y, r, r2) {
+    const ctx = this.fogCtx;
+    if (!r) r = this.props.game.state.fogRadius;
+    ctx.globalCompositeOperation = 'destination-out';
+    let grad = ctx.createRadialGradient(x,y,r2||1, x,y,r*0.75);
+    grad.addColorStop(0, 'rgba(0,0,0,255)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x-r,y-r,x+r,y+r);
+    ctx.globalCompositeOperation = 'destination-over';
+  }
 
   draw (x, y) {
     const game = this.props.game;
@@ -51,8 +64,8 @@ class Overlay extends Canvas {
     let x = evt.pageX, y = evt.pageY;
     switch (game.state.tool) {
       case 'fog':
-        if (evt.buttons & 1) this.game.fogErase(x, y);
-        this.setPointerOutline(x, y, 'yellow', this.game.state.radius);
+        if (evt.buttons & 1) this.fogErase(x, y);
+        this.setPointerOutline(x, y, 'yellow', game.state.fogRadius);
         break;
       case 'draw':
         if (evt.buttons & 1) {
