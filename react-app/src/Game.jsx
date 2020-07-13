@@ -57,6 +57,7 @@ class Game extends React.Component {
   }
 
   initAsDev () {
+    if (!window.confirm('Reset?')) return null;
     let tokens = [
       {name: 'bar', pc: 0, all: true},
       {name: 'foo', url: '/belmont.jpg', all: true},

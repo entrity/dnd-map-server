@@ -86,6 +86,16 @@ class ControlPanel extends React.Component {
       this.props.game.setState({fogOpacity: newOpacity});
   }
 
+  copyJson () {
+    const json = this.props.game.toJson();
+    window.navigator.clipboard.writeText(json);
+  }
+
+  pasteJson () {
+    const json = window.navigator.clipboard.readText();
+    this.props.game.fromJson(json);
+  }
+
   renderToolSelect () {
     return (<span id="tools">
       <ToolButton title="move" value="&#x1f9f3;" cp={this} />
@@ -151,6 +161,8 @@ class ControlPanel extends React.Component {
     const game = this.props.game;
     return (<div id="control-panel">
       <Button title="Redo as dev" value="&#x1f530;" onClick={game.initAsDev.bind(game)} />
+      <Button title="Copy JSON to clipboard" value="&#x1f9ec;" onClick={this.copyJson.bind(this)} />
+      <Button title="Paste JSON from clipboard" value="&#x1f4cb;" onClick={this.pasteJson.bind(this)} />
       |||
       {this.renderToggles()}
       |||
