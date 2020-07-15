@@ -6,12 +6,16 @@ class Token extends React.Component {
     this.state = {};
   }
 
+  isMoveTool () { return this.props.game.state.tool === 'move' }
+
   onMouseUp (evt) {
+    if (!this.isMoveTool()) return;
     if (this.state.was)
       this.props.game.selectToken(this.props.token, false, evt.ctrlKey);
   }
 
   onMouseDown (evt) {
+    if (!this.isMoveTool()) return;
     this.setState({was: this.props.token.$selected});
     if (!this.props.token.$selected)
       this.props.game.selectToken(this.props.token, true, evt.ctrlKey);

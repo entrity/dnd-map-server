@@ -87,10 +87,16 @@ canvas#fog {
 .gone { display: none; }
 .cursor {
 	z-index: var(--z-cursors);
-	font-size: '88pt';
 	pointer-events: none;
 	position: absolute;
+	font-family: "Noto Color Emoji";
+	opacity: 0.5;
+	font-size: 13;
+}
+.cursor > span {
 	text-shadow: 1px 1px white;
+	display: block;
+	transform: rotate(90deg);
 }
 canvas#overlay { z-index: var(--z-overlay); }
 div#tokens { position: relative; }

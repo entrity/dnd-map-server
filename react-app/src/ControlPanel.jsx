@@ -125,6 +125,10 @@ class ControlPanel extends React.Component {
 
   setGameState (key, value) { this.props.game.setState({[key]: value}) }
 
+  setGameInt (key, evt) { debugger; this.props.game.setState({[key]: parseInt(evt.target.value) || undefined}) }
+
+  setGameText (key, evt) { this.props.game.setState({[key]: evt.target.value}) }
+
   onTextChange (key, evt) { this.setState({[key]: evt.target.value}) }
 
   createMap () {
@@ -173,13 +177,6 @@ class ControlPanel extends React.Component {
     </span>)
   }
 
-  renderToggles () {
-    return (<span id="toggles">
-      <ToggleButton title="Maps" value="&#x1f5fa;" cp={this} />
-      <ToggleButton title="Tokens" value="&#x265f;" cp={this} />
-    </span>)
-  }
-
   renderToolControls () {
     const game = this.props.game;
     switch (this.tool) {
@@ -219,6 +216,21 @@ class ControlPanel extends React.Component {
     </div>)
   }
 
+  renderUser () {
+    if (!this.state.toggleOnUser) return null;
+    const game = this.props.game;
+    return <div>
+      <hr />
+      <input placeholder="User name" value={game.state.username||''} onChange={this.setGameText.bind(this, 'username')} />
+      <ToggleButton title="Share mouse (cursor)" value="&#x1f401;" cp={this} />
+      <input title="Cursor size" value={game.state.cursorSize||''} onChange={this.setGameInt.bind(this, 'cursorSize')} type="number" min="0" />
+      <hr />
+      <Button title="Redo as dev" value="&#x1f530;" onClick={game.initAsDev.bind(game)} />
+      <Button title="Copy JSON to clipboard" value="&#x1f46f;" onClick={this.copyJson.bind(this)} />
+      <Button title="Paste JSON from clipboard" value="&#x1f4cb;" onClick={this.pasteJson.bind(this)} />
+    </div>;
+  }
+
   renderTokens () {
     if (!this.state.toggleOnTokens) return null;
     return (<div>
@@ -239,17 +251,19 @@ class ControlPanel extends React.Component {
     const game = this.props.game;
     return (<div id="control-panel">
       {toggleHiddenButton}
-      <Button title="Redo as dev" value="&#x1f530;" onClick={game.initAsDev.bind(game)} />
-      <Button title="Copy JSON to clipboard" value="&#x1f46f;" onClick={this.copyJson.bind(this)} />
-      <Button title="Paste JSON from clipboard" value="&#x1f4cb;" onClick={this.pasteJson.bind(this)} />
       |||
-      {this.renderToggles()}
+      <span id="toggles">
+        <ToggleButton title="User" value="&#x1f9d9;" cp={this} />
+        <ToggleButton title="Maps" value="&#x1f5fa;" cp={this} />
+        <ToggleButton title="Tokens" value="&#x265f;" cp={this} />
+      </span>
       |||
       {this.renderToolSelect()}
       |||
       {this.renderToolControls()}
       {this.renderMaps()}
       {this.renderTokens()}
+      {this.renderUser()}
     </div>);
   }
 }

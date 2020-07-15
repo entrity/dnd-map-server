@@ -21,6 +21,8 @@ class Game extends React.Component {
     this.state = {
       maps: {},
       tokens: [],
+      cursors: [],
+      cursorSize: 50,
       fogOpacity: 0.5,
       fogUrl: undefined, /* data url */
       fogRadius: 33,
@@ -150,7 +152,7 @@ class Game extends React.Component {
         if (evt.buttons & 1) this.dragSelectedTokens(evt);
       default: return;
     }
-    if (evt.buttons & 1) this.setState({lastX: evt.pageX, lastY: evt.pageY});
+    this.setState({lastX: evt.pageX, lastY: evt.pageY});
   }
 
   /* Copy maps and dump current map, suitable for save to state or localStorage */
@@ -257,7 +259,23 @@ class Game extends React.Component {
   }
 
   renderCursors () {
-    return null;
+    const deadline = new Date() - 30000;
+    const state = this.state;
+    const cursors = this.state.cursors.filter(cur => cur.time > deadline);
+    return <div id="cursors">
+      {cursors.map((cur, $i) => {
+        const divStyle = {
+          top: cur.y, left: cur.x,
+        };
+        const imgStyle = {
+          fontSize: state.cursorSize || undefined,
+        };
+        return <div key={`cursor${$i}`} style={divStyle} className="cursor">
+          <span role="img" aria-label="pointer" style={imgStyle}>&#x1f5e1;</span>
+          {cur.u}
+        </div>
+      })}
+    </div>;
   }
 
   renderTokens () {
