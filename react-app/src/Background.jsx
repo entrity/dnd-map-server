@@ -13,11 +13,12 @@ class Background extends Canvas {
     return this.drawImage(this.map.url);
   }
 
-  onClick () {
-    this.props.game.setState({
-      showMapsMenu: false,
-      showTokensMenu: false,
+  onClick (evt) {
+    this.props.game.cpRef.current.setState({
+      toggleOnMaps: false,
+      toggleOnTokens: false,
     });
+    this.props.game.updateTokens(token => token.$selected = false);
   }
 
   resizeCanvases (w, h) {

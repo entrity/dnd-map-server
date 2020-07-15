@@ -4,6 +4,7 @@ import Drawing from './Drawing.jsx';
 import Fog from './Fog.jsx';
 import Overlay from './Overlay.jsx';
 import ControlPanel from './ControlPanel.jsx';
+import Token from './Token.jsx';
 
 class Game extends React.Component {
 
@@ -11,12 +12,15 @@ class Game extends React.Component {
     super(props);
     window.game = this;
     const params = new URLSearchParams(window.location.href.replace(/.*\?/, ''));
+    this.isHost = true || !!params.host; /* todo update */
+    this.cpRef = React.createRef();
     this.bgRef = React.createRef();
     this.fogRef = React.createRef();
     this.drawRef = React.createRef();
+    this.overlayRef = React.createRef();
     this.state = {
       maps: {},
-      isHost: true, /* todo */
+      tokens: [],
       fogOpacity: 0.5,
       fogUrl: undefined, /* data url */
       fogRadius: 33,
@@ -24,7 +28,7 @@ class Game extends React.Component {
       isFirstLoadDone: false, /* Ensure we don't overwrite localStorage before load is done */
       drawColor: 'purple',
       drawSize: 44,
-      tool: 'fog',
+      tool: 'move',
       room: params.get('room') || 'defaultRoom',
     };
   }
@@ -79,7 +83,75 @@ class Game extends React.Component {
     });
   }
 
+  updateTokens (callback) {
+    const tokensCopy = JSON.parse(JSON.stringify(this.state.tokens));
+    tokensCopy.forEach(callback);
+    this.setState({tokens: tokensCopy});
+  }
+
+  updateToken (token, callback) {
+    const tokenIdx = this.state.tokens.indexOf(token);
+    const tokensCopy = JSON.parse(JSON.stringify(this.state.tokens));
+    const tokenCopy = tokensCopy[tokenIdx];
+    callback(tokenCopy, tokenIdx, tokensCopy);
+    this.setState({tokens: tokensCopy});
+  }
+
+  selectToken (token, trueFalse, multiSelect) {
+    if (!token.pc && !this.isHost) return;
+    const tokenIdx = this.state.tokens.indexOf(token);
+    this.updateTokens((copy, $i) => {
+      if (tokenIdx === $i) {
+        if (trueFalse === undefined || trueFalse === null) trueFalse = !copy.$selected;
+        copy.$selected = trueFalse;
+      } else if (!multiSelect)
+        copy.$selected = false;
+      if (copy.$selected) { /* set initial coords (for drag) */
+        copy.$x0 = copy.x;
+        copy.$y0 = copy.y;
+      }
+    });
+  }
+
+  dragSelectedTokens (evt) {
+    if (this.state.tool !== 'move') return;
+    const downX = this.state.downX, downY = this.state.downY;
+    this.updateTokens(token => {
+      if (token.$selected) {
+        token.x = token.$x0 + evt.pageX - downX;
+        token.y = token.$y0 + evt.pageY - downY;
+      }
+    });
+  }
+
   onResize () { this.loadMap(null, true) }
+
+  onMouseDown (evt) {
+    if (evt.buttons & 1) this.setState({
+      lastX: evt.pageX, lastY: evt.pageY,
+      downX: evt.pageX, downY: evt.pageY,
+    });
+  }
+
+  onMouseMove (evt) {
+    const overlay = this.overlayRef.current;
+    if (overlay.canvasRef && overlay.canvasRef.current) overlay.clear();
+    let x = evt.pageX, y = evt.pageY;
+    switch (this.state.tool) {
+      case 'fog':
+        if (evt.buttons & 1) overlay.fogErase(x, y);
+        overlay.setPointerOutline(x, y, 'yellow', this.state.fogRadius);
+        break;
+      case 'draw':
+        if (evt.buttons & 1) overlay.drawOrErase(x, y);
+        overlay.setPointerOutline(x, y, this.state.drawColor, this.state.drawSize);
+        break;
+      case 'move':
+        if (evt.buttons & 1) this.dragSelectedTokens(evt);
+      default: return;
+    }
+    if (evt.buttons & 1) this.setState({lastX: evt.pageX, lastY: evt.pageY});
+  }
 
   /* Copy maps and dump current map, suitable for save to state or localStorage */
   dumpMaps () {
@@ -132,7 +204,7 @@ class Game extends React.Component {
     return JSON.stringify({
       maps: this.dumpMaps(),
       mapId: this.map && this.map.$id,
-      tokens: this.state.tokens,
+      tokens: this.state.tokens, /* todo: rm $selected, etc s.t. other players aren't affected */
     });
   }
 
@@ -161,27 +233,20 @@ class Game extends React.Component {
     return map || Object.values(this.state.maps)[0];
   }
 
-  onBgClick () {
-    this.setState({
-      showMapsMenu: false,
-      showTokensMenu: false,
-    });
-  }
-
   render () {
     const goneKlass = this.state.isFogLoaded ? null : 'gone';
     try {
       return (
-        <div id="game">
+        <div id="game" onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseDown.bind(this)}>
           <Background game={this} ref={this.bgRef} className={goneKlass} />
           <div className={goneKlass}>
             <Drawing game={this} ref={this.drawRef} />
-            <Fog game={this} ref={this.fogRef} />
             {this.renderTokens()}
+            <Fog game={this} ref={this.fogRef} />
             {this.renderCursors()}
-            <Overlay game={this} />{/* Holds outline for fog & draw tools */}
+            <Overlay game={this} ref={this.overlayRef} />{/* Holds outline for fog & draw tools */}
           </div>
-          <ControlPanel game={this} />
+          <ControlPanel game={this} ref={this.cpRef} />
         </div>
       );
     } catch (ex) {
@@ -196,7 +261,11 @@ class Game extends React.Component {
   }
 
   renderTokens () {
-    return null;
+    return <div id="tokens">
+      {this.state.tokens.map((token, $i) => (
+        <Token key={`Token${$i}`} token={token} game={this} />
+      ))}
+    </div>;
   }
 }
 export default Game;

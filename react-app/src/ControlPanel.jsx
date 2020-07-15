@@ -9,7 +9,7 @@ function ToolButton(props) {
   const {cp, title, value, game, ..._} = props;
   const isSelected = title === cp.props.game.state.tool;
   const onClick = cp.setGameState.bind(cp, 'tool', title);
-  return <Button title={title} value={props.value.toString()} onClick={onClick} isSelected={isSelected} />;
+  return <Button title={title} value={value.toString()} onClick={onClick} isSelected={isSelected} />;
 }
 
 function ToggleButton(props) {
@@ -56,6 +56,58 @@ class MapConfig extends React.Component {
   }
 }
 
+class TokenConfig extends React.Component {
+  update (callback) {
+    this.props.game.updateToken(this.props.token, callback);
+  }
+
+  onMapSelect (evt) {
+    let value = evt.target.value;
+    if (Object.keys(this.props.game.state.maps).indexOf(value) < 0)
+      value = undefined;
+    this.update(token => token.mapId = value);
+  }
+
+  onToggle (key) {
+    this.update(token => token[key] = !token[key]);
+  }
+
+  onTextChange (key, evt) {
+    this.update(token => token[key] = evt.target.value);
+  }
+
+  selectToken (token) {
+    this.props.game.selectToken(token);
+  }
+
+  render () {
+    const token = this.props.token;
+    if (!token) return null;
+    const game = this.props.game;
+    const maps = game.state.maps;
+    return <div className="tokenConfig">
+      {<Button value={token.pc ? "\u{1f236}" : "\u{1f21a}"} onClick={this.onToggle.bind(this, 'pc')} />}
+      {<Button value={token.$selected ? "\u{1f233}" : "\u{1f210}"} onClick={this.selectToken.bind(this, token, undefined)} />}
+      <input value={token.name||''} placeholder="Name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
+      <input value={token.url||''} placeholder="Url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
+      wh:
+      <input value={token.w||''} placeholder="w" className="text2" onChange={this.onTextChange.bind(this, 'w')} type="number" step="5" />
+      <input value={token.h||''} placeholder="h" className="text2" onChange={this.onTextChange.bind(this, 'h')} type="number" step="5" />
+      xy:
+      <input value={token.x||''} placeholder="x" className="text2" onChange={this.onTextChange.bind(this, 'x')} type="number" />
+      <input value={token.y||''} placeholder="y" className="text2" onChange={this.onTextChange.bind(this, 'y')} type="number" />
+      <select defaultValue={token.mapId} onChange={this.onMapSelect.bind(this)}>
+        <option>(all)</option>
+        {Object.keys(maps).map((key, $i) => (
+          <option key={$i} value={key}>
+            {maps[key].name || maps[key].url || '(unnamed)'}
+          </option>
+        ))}
+      </select>
+    </div>
+  }
+}
+
 class ControlPanel extends React.Component {
   constructor (props) {
     super(props);
@@ -70,12 +122,20 @@ class ControlPanel extends React.Component {
 
   createMap () {
     const game = this.props.game;
-    const mapsCopy = JSON.parse(JSON.stringify(game.state.maps));
+    const mapsCopy = JSON.parse(JSON.stringify(game.state.maps||{}));
     const mapId = 1 + Object.keys(mapsCopy).reduce((m, x) => Math.max(m, x), 0);
     const newMap = {name: this.state.newMapName, $id: mapId};
     mapsCopy[mapId] = newMap;
     game.setState({maps: mapsCopy});
     this.setState({newMapName: undefined});
+  }
+
+  createToken () {
+    const game = this.props.game;
+    const tokensCopy = JSON.parse(JSON.stringify(game.state.tokens||[]));
+    tokensCopy.push({name: this.state.newTokenName});
+    game.setState({tokens: tokensCopy});
+    this.setState({newTokenName: undefined});
   }
 
   resetFog () { this.props.game.fogRef.current.fill(); }
@@ -118,7 +178,7 @@ class ControlPanel extends React.Component {
         return (<span>
           <Button title="eraser" value="&#x1f9fd;" onClick={this.setGameState.bind(this, 'subtool', 'eraser')} isSelected={game.state.subtool === 'eraser'} />
           <Button title="pencil" value="&#x1f58d;" onClick={this.setGameState.bind(this, 'subtool', 'pencil')} isSelected={game.state.subtool === 'pencil'} />
-          <input size="3" title="draw size" value={game.state.drawSize} onChange={this.onTextChange.bind(game, 'drawSize')} type="number" step="5" />
+          <input size="3" title="draw size" value={game.state.drawSize} onChange={this.onTextChange.bind(game, 'drawSize')} type="number" step="3" min="1" />
           <input size="3" title="draw color" value={game.state.drawColor} onChange={this.onTextChange.bind(game, 'drawColor')} />
           <Button style={{backgroundColor: game.state.drawColor}} value="&#x1f58c;" disabled />
         </span>)
@@ -127,7 +187,7 @@ class ControlPanel extends React.Component {
       case 'fog':
         return (<span>
           <Button title="reset fog" onClick={this.resetFog.bind(this)} value="&#x1f300;" />
-          <input size="3" title="fog radius" step="5" value={game.state.fogRadius||0} onChange={this.onTextChange.bind(game, 'fogRadius')} type="number" />
+          <input size="3" title="fog radius" value={game.state.fogRadius||0} onChange={this.onTextChange.bind(game, 'fogRadius')} type="number" step="5" min="1" />
           <input size="3" title="fog opacity" step="0.05" min="0" max="1" value={game.state.fogOpacity} onChange={this.setFogOpacity.bind(this)} type="number" />
         </span>);
       default: return null;
@@ -150,10 +210,16 @@ class ControlPanel extends React.Component {
     </div>)
   }
 
-  renderTokenSelect () {
+  renderTokens () {
+    if (!this.state.toggleOnTokens) return null;
     return (<div>
       <hr />
-      {/*<Button title="draw" value="&#x1f9fd;" />*/}
+      <input placeholder="New token name (optional)" onChange={this.onTextChange.bind(this, 'newTokenName')} />
+      <Button title="Create new token" value="&#x2795;" onClick={this.createToken.bind(this)} />
+      {this.props.game.state.tokens.length}
+      {this.props.game.state.tokens.map((token, $i) => (
+        <TokenConfig key={`token${$i}`} token={token} game={this.props.game} />
+      ))}
     </div>)
   }
 
@@ -161,7 +227,7 @@ class ControlPanel extends React.Component {
     const game = this.props.game;
     return (<div id="control-panel">
       <Button title="Redo as dev" value="&#x1f530;" onClick={game.initAsDev.bind(game)} />
-      <Button title="Copy JSON to clipboard" value="&#x1f9ec;" onClick={this.copyJson.bind(this)} />
+      <Button title="Copy JSON to clipboard" value="&#x1f46f;" onClick={this.copyJson.bind(this)} />
       <Button title="Paste JSON from clipboard" value="&#x1f4cb;" onClick={this.pasteJson.bind(this)} />
       |||
       {this.renderToggles()}
@@ -170,7 +236,7 @@ class ControlPanel extends React.Component {
       |||
       {this.renderToolControls()}
       {this.renderMaps()}
-      {this.renderTokenSelect()}
+      {this.renderTokens()}
     </div>);
   }
 }

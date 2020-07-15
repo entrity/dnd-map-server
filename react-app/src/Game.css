@@ -21,6 +21,21 @@
 	position: relative;
 }
 
+img {
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-o-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	-webkit-user-drag: none;
+	-khtml-user-drag: none;
+	-moz-user-drag: none;
+	-o-user-drag: none;
+	-ms-user-drag: none;
+	user-drag: none;
+}
+
 canvas, #control-panel {
 	top: 0;
 	left: 0;
@@ -78,6 +93,7 @@ canvas#fog {
 	text-shadow: 1px 1px white;
 }
 canvas#overlay { z-index: var(--z-overlay); }
+div#tokens { position: relative; }
 div.token.pc { z-index: var(--z-pc-img); }
 div.token.pc .label { z-index: var(--z-pc-lbl) }
 div.token.npc { z-index: var(--z-npc-div); }
@@ -86,13 +102,15 @@ div.token {
 	position: absolute;
 	pointer-events: all;
 }
-div.token.grabbable { cursor: grab; }
+div.token.pc, div.token.grabbable { cursor: grab; }
 div.token img { position: relative; }
 div.token img.dead {
 	filter: invert();
 	-webkit-transform: scaleY(-1);
 	transform: scaleY(-1);
 }
+input.text1 { width: 2em !important; }
+input.text2 { width: 3em !important; }
 .selected {
 	border: 6px dotted yellow;
 	margin: -6px;

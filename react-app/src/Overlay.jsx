@@ -23,6 +23,11 @@ class Overlay extends Canvas {
     ctx.globalCompositeOperation = 'destination-over';
   }
 
+  drawOrErase (x, y) {
+    if (this.isEraser()) this.erase(x, y);
+    else this.draw(x, y);
+  }
+
   draw (x, y) {
     const game = this.props.game;
     const ctx = this.drawCtx;
@@ -53,38 +58,13 @@ class Overlay extends Canvas {
     ctx.closePath();
   }
 
-  onMouseDown (evt) {
-    if (evt.buttons & 1) this.setState({lastX: evt.pageX, lastY: evt.pageY});
-  }
-
-  onMouseMove (evt) {
-    this.clear();
-    const game = this.props.game;
-    if (!game.state || !game.state.tool) return;
-    let x = evt.pageX, y = evt.pageY;
-    switch (game.state.tool) {
-      case 'fog':
-        if (evt.buttons & 1) this.fogErase(x, y);
-        this.setPointerOutline(x, y, 'yellow', game.state.fogRadius);
-        break;
-      case 'draw':
-        if (evt.buttons & 1) {
-          if (this.isEraser()) this.erase(x, y);
-          else this.draw(x, y);
-        }
-        let color = game.state.drawColor;
-        this.setPointerOutline(x, y, color, game.state.drawSize);
-        break;
-      default: break;
-    }
-  }
-
   render () {
-    return <canvas id="overlay"
-      ref={this.canvasRef}
-      onMouseMove={this.onMouseMove.bind(this)}
-      onMouseDown={this.onMouseDown.bind(this)}
-    />;
+    switch (this.props.game.state.tool) {
+      case 'fog': break;
+      case 'draw': break;
+      default: return null;
+    }
+    return <canvas id="overlay" ref={this.canvasRef} />;
   }
 }
 export default Overlay;
