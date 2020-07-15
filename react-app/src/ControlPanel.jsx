@@ -72,6 +72,10 @@ class TokenConfig extends React.Component {
     this.update(token => token[key] = !token[key]);
   }
 
+  onIntegerChange (key, evt) {
+    this.update(token => token[key] = parseInt(evt.target.value) || undefined);
+  }
+
   onTextChange (key, evt) {
     this.update(token => token[key] = evt.target.value);
   }
@@ -92,11 +96,11 @@ class TokenConfig extends React.Component {
       <input value={token.name||''} placeholder="Name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
       <input value={token.url||''} placeholder="Url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
       wh:
-      <input value={token.w||''} placeholder="w" className="text2" onChange={this.onTextChange.bind(this, 'w')} type="number" step="5" title="width" />
-      <input value={token.h||''} placeholder="h" className="text2" onChange={this.onTextChange.bind(this, 'h')} type="number" step="5" title="height" />
+      <input value={token.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" step="5" title="width" />
+      <input value={token.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" step="5" title="height" />
       xy:
-      <input value={token.x||''} placeholder="x" className="text2" onChange={this.onTextChange.bind(this, 'x')} type="number" title="x coord" />
-      <input value={token.y||''} placeholder="y" className="text2" onChange={this.onTextChange.bind(this, 'y')} type="number" title="y coord" />
+      <input value={token.x||''} placeholder="x" className="text2" onChange={this.onIntegerChange.bind(this, 'x')} type="number" title="x coord" />
+      <input value={token.y||''} placeholder="y" className="text2" onChange={this.onIntegerChange.bind(this, 'y')} type="number" title="y coord" />
       <select defaultValue={token.mapId} onChange={this.onMapSelect.bind(this)} title="which map(s)">
         <option>(all)</option>
         {Object.keys(maps).map((key, $i) => (
@@ -116,6 +120,8 @@ class ControlPanel extends React.Component {
   }
 
   get tool () { return this.props.game.state.tool }
+
+  toggleHidden () { this.setState({hidden: !this.state.hidden}) }
 
   setGameState (key, value) { this.props.game.setState({[key]: value}) }
 
@@ -153,8 +159,10 @@ class ControlPanel extends React.Component {
   }
 
   pasteJson () {
-    const json = window.navigator.clipboard.readText();
-    this.props.game.fromJson(json);
+    if (window.confirm('Do you really want to overwrite this game with what\'s in your clipboard?')) {
+      const json = window.navigator.clipboard.readText();
+      this.props.game.fromJson(json);
+    }
   }
 
   renderToolSelect () {
@@ -225,8 +233,12 @@ class ControlPanel extends React.Component {
   }
 
   render () {
+    const toggleHiddenButton = <Button value="&#x1f441;" onClick={this.toggleHidden.bind(this)} title="show/hide control panel" />;
+    if (this.state.hidden)
+      return <div id="control-panel">{toggleHiddenButton}</div>
     const game = this.props.game;
     return (<div id="control-panel">
+      {toggleHiddenButton}
       <Button title="Redo as dev" value="&#x1f530;" onClick={game.initAsDev.bind(game)} />
       <Button title="Copy JSON to clipboard" value="&#x1f46f;" onClick={this.copyJson.bind(this)} />
       <Button title="Paste JSON from clipboard" value="&#x1f4cb;" onClick={this.pasteJson.bind(this)} />
