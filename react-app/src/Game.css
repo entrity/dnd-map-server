@@ -104,7 +104,7 @@ div.token {
 }
 div.token.pc, div.token.grabbable { cursor: grab; }
 div.token img { position: relative; }
-div.token img.dead {
+div.token.dead img {
 	filter: invert();
 	-webkit-transform: scaleY(-1);
 	transform: scaleY(-1);

@@ -18,13 +18,16 @@ class Token extends React.Component {
   }
 
   render () {
+    const isHost = this.props.game.isHost;
     const mapId = this.props.game.state.mapId;
     const token = this.props.token;
     if (!token.url || !token.url.trim()) return null;
     if ([undefined, null, mapId].indexOf(token.mapId) >= 0) {
       const klasses = ['token',
+        token.ko && 'dead',
         token.pc ? 'pc' : 'npc',
         token.$selected && 'selected',
+        isHost && !token.pc && 'grabbable',
       ];
       const divStyle = {
         left: token.x || 0,

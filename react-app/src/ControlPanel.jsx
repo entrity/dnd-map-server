@@ -76,8 +76,8 @@ class TokenConfig extends React.Component {
     this.update(token => token[key] = evt.target.value);
   }
 
-  selectToken (token) {
-    this.props.game.selectToken(token);
+  selectToken (token, evt) {
+    this.props.game.selectToken(token, undefined, true);
   }
 
   render () {
@@ -86,17 +86,18 @@ class TokenConfig extends React.Component {
     const game = this.props.game;
     const maps = game.state.maps;
     return <div className="tokenConfig">
-      {<Button value={token.pc ? "\u{1f236}" : "\u{1f21a}"} onClick={this.onToggle.bind(this, 'pc')} />}
-      {<Button value={token.$selected ? "\u{1f233}" : "\u{1f210}"} onClick={this.selectToken.bind(this, token, undefined)} />}
+      {<Button value={token.pc ? "\u{1f236}" : "\u{1f21a}"} onClick={this.onToggle.bind(this, 'pc')} title="pc/npc" />}
+      {<Button value={token.$selected ? "\u{1f22f}" : "\u{1f233}"} onClick={this.selectToken.bind(this, token)} title="(un)select" />}
+      {<Button value={token.ko ? "\u{1f940}" : "\u{1f339}"} onClick={this.onToggle.bind(this, 'ko')} title="alive/dead" />}
       <input value={token.name||''} placeholder="Name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
       <input value={token.url||''} placeholder="Url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
       wh:
-      <input value={token.w||''} placeholder="w" className="text2" onChange={this.onTextChange.bind(this, 'w')} type="number" step="5" />
-      <input value={token.h||''} placeholder="h" className="text2" onChange={this.onTextChange.bind(this, 'h')} type="number" step="5" />
+      <input value={token.w||''} placeholder="w" className="text2" onChange={this.onTextChange.bind(this, 'w')} type="number" step="5" title="width" />
+      <input value={token.h||''} placeholder="h" className="text2" onChange={this.onTextChange.bind(this, 'h')} type="number" step="5" title="height" />
       xy:
-      <input value={token.x||''} placeholder="x" className="text2" onChange={this.onTextChange.bind(this, 'x')} type="number" />
-      <input value={token.y||''} placeholder="y" className="text2" onChange={this.onTextChange.bind(this, 'y')} type="number" />
-      <select defaultValue={token.mapId} onChange={this.onMapSelect.bind(this)}>
+      <input value={token.x||''} placeholder="x" className="text2" onChange={this.onTextChange.bind(this, 'x')} type="number" title="x coord" />
+      <input value={token.y||''} placeholder="y" className="text2" onChange={this.onTextChange.bind(this, 'y')} type="number" title="y coord" />
+      <select defaultValue={token.mapId} onChange={this.onMapSelect.bind(this)} title="which map(s)">
         <option>(all)</option>
         {Object.keys(maps).map((key, $i) => (
           <option key={$i} value={key}>
