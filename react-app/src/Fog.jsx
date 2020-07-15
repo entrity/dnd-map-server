@@ -17,7 +17,8 @@ class Fog extends Canvas {
   }
 
   render () {
-    return <canvas id="fog" ref={this.canvasRef} className="passthrough" style={{opacity: this.gameState.fogOpacity}} />;
+    const fogOpacity = this.props.game.isHost ? this.gameState.fogOpacity : 1;
+    return <canvas id="fog" ref={this.canvasRef} className="passthrough" style={{opacity: fogOpacity}} />;
   }
 }
 export default Fog;

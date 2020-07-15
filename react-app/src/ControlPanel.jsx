@@ -221,7 +221,7 @@ class ControlPanel extends React.Component {
     const game = this.props.game;
     return <div>
       <hr />
-      <input placeholder="User name" value={game.state.username||''} onChange={this.setGameText.bind(this, 'username')} />
+      <input title="User name" placeholder="User name" value={game.state.username||''} onChange={this.setGameText.bind(this, 'username')} />
       <ToggleButton title="Share mouse (cursor)" value="&#x1f401;" cp={this} />
       <input title="Cursor size" value={game.state.cursorSize||''} onChange={this.setGameInt.bind(this, 'cursorSize')} type="number" min="0" />
       <hr />
@@ -249,22 +249,29 @@ class ControlPanel extends React.Component {
     if (this.state.hidden)
       return <div id="control-panel">{toggleHiddenButton}</div>
     const game = this.props.game;
-    return (<div id="control-panel">
-      {toggleHiddenButton}
-      |||
-      <span id="toggles">
-        <ToggleButton title="User" value="&#x1f9d9;" cp={this} />
-        <ToggleButton title="Maps" value="&#x1f5fa;" cp={this} />
-        <ToggleButton title="Tokens" value="&#x265f;" cp={this} />
-      </span>
-      |||
-      {this.renderToolSelect()}
-      |||
-      {this.renderToolControls()}
-      {this.renderMaps()}
-      {this.renderTokens()}
-      {this.renderUser()}
-    </div>);
+    if (game.isHost)
+      return <div id="control-panel">
+        {toggleHiddenButton}
+        |||
+        <span id="toggles">
+          <ToggleButton title="User" value="&#x1f9d9;" cp={this} />
+          <ToggleButton title="Maps" value="&#x1f5fa;" cp={this} />
+          <ToggleButton title="Tokens" value="&#x265f;" cp={this} />
+        </span>
+        |||
+        {this.renderToolSelect()}
+        |||
+        {this.renderToolControls()}
+        {this.renderMaps()}
+        {this.renderTokens()}
+        {this.renderUser()}
+      </div>;
+    else
+      return <div id="control-panel">
+        {toggleHiddenButton}
+        <input title="User name" placeholder="User name" value={game.state.username||''} onChange={this.setGameText.bind(this, 'username')} />
+        <input title="Cursor size" value={game.state.cursorSize||''} onChange={this.setGameInt.bind(this, 'cursorSize')} type="number" min="0" />
+      </div>
   }
 }
 export default ControlPanel;

@@ -12,7 +12,7 @@ class Game extends React.Component {
     super(props);
     window.game = this;
     const params = new URLSearchParams(window.location.href.replace(/.*\?/, ''));
-    this.isHost = true || !!params.host; /* todo update */
+    this.isHost = params.get('host');
     this.cpRef = React.createRef();
     this.bgRef = React.createRef();
     this.fogRef = React.createRef();
@@ -39,26 +39,11 @@ class Game extends React.Component {
     this.loadFromLocalStorage();
     window.addEventListener('beforeunload', this.saveToLocalStorage.bind(this));
     window.addEventListener('resize', this.onResize.bind(this));
-    // this.addControlsCallbacks();
-    // this.mapCanvasRef.current.addEventListener('click', ((evt) => {
-    //   this.setState({showMapsMenu: false});
-    //   this.setState({showTokensMenu: false});
-    // }));
-    // this.setState({fogLoaded: false}, () => {
-    //   console.log('Attempting to load from localStorage')
-    //   /* load map from storage, if any */
-    //   this.loadLocalStorage().catch(() => {
-    //     console.log('Attempting to load default map')
-    //     this.loadMap(); /* load default map */
-    //   }).then(() => { console.log('...loaded from localStorage') });
-    // });
   }
 
   componentWillUnmount () {
-    console.log('unmounting', this)
     window.removeEventListener('beforeunload', this.saveToLocalStorage.bind(this));
     window.removeEventListener('resize', this.onResize.bind(this));
-    // this.removeControlsCallbacks();
     this.saveToLocalStorage();
   }
 
@@ -139,7 +124,7 @@ class Game extends React.Component {
     const overlay = this.overlayRef.current;
     if (overlay.canvasRef && overlay.canvasRef.current) overlay.clear();
     let x = evt.pageX, y = evt.pageY;
-    switch (this.state.tool) {
+    switch (this.isHost ? this.state.tool : 'move') {
       case 'fog':
         if (evt.buttons & 1) overlay.fogErase(x, y);
         overlay.setPointerOutline(x, y, 'yellow', this.state.fogRadius);
