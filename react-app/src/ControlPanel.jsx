@@ -21,11 +21,20 @@ function ToggleButton(props) {
 }
 
 class MapConfig extends React.Component {
-  onTextChange (key, evt) {
+  update (callback) {
     const game = this.props.game;
     const mapsCopy = JSON.parse(JSON.stringify(game.state.maps));
-    mapsCopy[this.props.mapId][key] = evt.target.value;
+    callback(mapsCopy[this.props.mapId]);
     game.setState({maps: mapsCopy});
+  }
+
+  onTextChange (key, evt) {
+    this.update(map => map[key] = evt.target.value);
+  }
+
+  onIntegerChange (key, evt) {
+    const value = parseInt(evt.target.value);
+    if (value) this.update(map => map[key] = value);
   }
 
   load () { this.props.game.loadMap(this.props.map) }
@@ -42,15 +51,22 @@ class MapConfig extends React.Component {
     }
   }
 
+  applyGeometry () { window.location.reload() }
+
   render () {
     if (!this.props.map) return null;
     const game = this.props.game
+    const map = this.props.map;
     const isSelected = game.state.mapId === this.props.mapId;
     return <div className={isSelected ? 'selected' : null}>
-      {this.props.mapId} {this.props.map.$id}
-      <input value={this.props.map.name||''} placeholder="Map name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
-      <input value={this.props.map.url||''} placeholder="Map url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
+      {this.props.mapId}
+      <input value={map.name||''} placeholder="Map name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
+      <input value={map.url||''} placeholder="Map url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
       <Button title="Load map" value="&#x1f23a;" onClick={this.load.bind(this)} />
+      wh:
+      <input value={map.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" min="1" step="5" title="width" />
+      <input value={map.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" min="1" step="5" title="height" />
+      <Button title="Apply geometry changes" value="&#x1f6f5;" onClick={this.applyGeometry.bind(this)} />
       <Button title="Delete map" value="&#x1f5d1;" onClick={this.delete.bind(this)} />
     </div>
   }
