@@ -32,7 +32,7 @@ class Game extends React.Component {
       isFogLoaded: false,
       isFirstLoadDone: false, /* Ensure we don't overwrite localStorage before load is done */
       drawColor: 'purple',
-      drawSize: 44,
+      drawSize: 8,
       tool: 'move',
       username: this.isHost ? 'DM' : 'PC',
       'toggleOnShare mouse (cursor)': true,

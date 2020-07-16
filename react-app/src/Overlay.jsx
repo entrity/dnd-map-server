@@ -71,12 +71,16 @@ class Overlay extends Canvas {
   }
 
   render () {
+    let klass;
     switch (this.props.game.state.tool) {
-      case 'fog': break;
-      case 'draw': break;
-      default: return null;
+      case 'fog':
+      case 'draw':
+        klass = ''
+        break;
+      default:
+        klass = 'gone';
     }
-    return <canvas id="overlay" ref={this.canvasRef} />;
+    return <canvas id="overlay" ref={this.canvasRef} className={klass} />;
   }
 }
 export default Overlay;
