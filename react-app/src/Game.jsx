@@ -43,12 +43,16 @@ class Game extends React.Component {
     this.loadFromLocalStorage();
     window.addEventListener('beforeunload', this.saveToLocalStorage.bind(this));
     window.addEventListener('resize', this.onResize.bind(this));
+    window.addEventListener('keypress', this.onKeyPress.bind(this));
+    window.addEventListener('keydown', this.onKeyDown.bind(this));
   }
 
   componentWillUnmount () {
+    this.saveToLocalStorage();
     window.removeEventListener('beforeunload', this.saveToLocalStorage.bind(this));
     window.removeEventListener('resize', this.onResize.bind(this));
-    this.saveToLocalStorage();
+    window.removeEventListener('keypress', this.onKeyPress.bind(this));
+    window.removeEventListener('keydown', this.onKeyDown.bind(this));
   }
 
   initAsDev () {
@@ -134,6 +138,62 @@ class Game extends React.Component {
   }
 
   onResize () { this.loadMap(null, true) }
+
+  onKeyDown (evt) {
+    const moveFactor = evt.shiftKey ? 100 : 10;
+    const moveSelectedTokens = () => {
+      this.updateTokens(token => {
+        if (token.$selected) {
+          switch (evt.keyCode) {
+            case 27: token.$selected = false; break; /* escape */
+            case 37: token.x -= moveFactor; break; /* left */
+            case 38: token.y -= moveFactor; break; /* up */
+            case 39: token.x += moveFactor; break; /* right */
+            case 40: token.y += moveFactor; break; /* down */
+            default: return;
+          }
+          evt.preventDefault();
+        }
+      });
+    }
+    switch (evt.keyCode) {
+      case 27:
+      case 37:
+      case 38:
+      case 39:
+      case 40: moveSelectedTokens(evt); break;
+      default: return;
+    }
+  }
+
+  onKeyPress (evt) {
+    if (!this.isHost) return evt;
+    if (evt.target.tagName === 'INPUT' && evt.target.type === 'text')
+      return evt;
+    function toggle (key, location) {
+      (location||this).setState({[key]: !(location||this).state[key]});
+    }
+    const cp = this.cpRef.current;
+    switch(evt.code) {
+      case 'KeyC':
+        if (evt.shiftKey) cp.copyJson(); /* dump json to clipboard */
+        break;
+      case 'KeyH': toggle('hidden', cp); break;
+      case 'KeyG': this.setState({tool: 'fog'}); break;
+      case 'KeyL':
+        if (evt.shiftKey) this.loadFromLocalStorage();
+        else this.saveToLocalStorage();
+        break;
+      case 'KeyM': toggle('toggleOnMaps', cp); break;
+      case 'KeyP': this.setState({tool: 'draw'}); break;
+      case 'KeyT': toggle('toggleOnTokens', cp); break;
+      case 'KeyV':
+        if (evt.shiftKey) cp.pasteJson(); /* load json from clipboard */
+        else this.setState({tool: 'move'});
+        break;
+      default: return
+    }
+  }
 
   onMouseDown (evt) {
     if (evt.buttons & 1) this.setState({
