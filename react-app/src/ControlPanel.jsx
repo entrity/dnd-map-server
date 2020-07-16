@@ -61,6 +61,23 @@ class TokenConfig extends React.Component {
     this.props.game.updateToken(this.props.token, callback);
   }
 
+  delete () {
+    const game = this.props.game;
+    const tokens = game.state.tokens.map(t => t);
+    const index = tokens.indexOf(this.props.token);
+    tokens.splice(index, 1);
+    game.setState({tokens: tokens});
+  }
+
+  copy () {
+    const game = this.props.game;
+    const copy = Object.assign({}, this.props.token);
+    const tokens = game.state.tokens.map(t => t);
+    const index = tokens.indexOf(this.props.token);
+    tokens.splice(index+1, 0, copy);
+    game.setState({tokens: tokens});
+  }
+
   onMapSelect (evt) {
     let value = evt.target.value;
     if (Object.keys(this.props.game.state.maps).indexOf(value) < 0)
@@ -89,27 +106,41 @@ class TokenConfig extends React.Component {
     if (!token) return null;
     const game = this.props.game;
     const maps = game.state.maps;
-    return <div className="tokenConfig">
-      {<Button value={token.pc ? "\u{1f236}" : "\u{1f21a}"} onClick={this.onToggle.bind(this, 'pc')} title="pc/npc" />}
-      {<Button value={token.$selected ? "\u{1f22f}" : "\u{1f233}"} onClick={this.selectToken.bind(this, token)} title="(un)select" />}
-      {<Button value={token.ko ? "\u{1f940}" : "\u{1f339}"} onClick={this.onToggle.bind(this, 'ko')} title="alive/dead" />}
-      <input value={token.name||''} placeholder="Name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
-      <input value={token.url||''} placeholder="Url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
-      wh:
-      <input value={token.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" step="5" title="width" />
-      <input value={token.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" step="5" title="height" />
-      xy:
-      <input value={token.x||''} placeholder="x" className="text2" onChange={this.onIntegerChange.bind(this, 'x')} type="number" title="x coord" />
-      <input value={token.y||''} placeholder="y" className="text2" onChange={this.onIntegerChange.bind(this, 'y')} type="number" title="y coord" />
-      <select defaultValue={token.mapId} onChange={this.onMapSelect.bind(this)} title="which map(s)">
-        <option>(all)</option>
-        {Object.keys(maps).map((key, $i) => (
-          <option key={$i} value={key}>
-            {maps[key].name || maps[key].url || '(unnamed)'}
-          </option>
-        ))}
-      </select>
-    </div>
+    if (game.isHost)
+      return <div className="tokenConfig">
+        <Button title="Duplicate token" value="&#x1f46f;" onClick={this.copy.bind(this)} />
+        {<Button value={token.pc ? "\u{1f236}" : "\u{1f21a}"} onClick={this.onToggle.bind(this, 'pc')} title="pc/npc" />}
+        {<Button value={token.$selected ? "\u{1f22f}" : "\u{1f233}"} onClick={this.selectToken.bind(this, token)} title="(un)select" />}
+        {<Button value={token.ko ? "\u{1f940}" : "\u{1f339}"} onClick={this.onToggle.bind(this, 'ko')} title="alive/dead" />}
+        <input value={token.name||''} placeholder="Name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
+        <input value={token.url||''} placeholder="Url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
+        wh:
+        <input value={token.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" step="5" title="width" />
+        <input value={token.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" step="5" title="height" />
+        xy:
+        <input value={token.x||''} placeholder="x" className="text2" onChange={this.onIntegerChange.bind(this, 'x')} type="number" title="x coord" />
+        <input value={token.y||''} placeholder="y" className="text2" onChange={this.onIntegerChange.bind(this, 'y')} type="number" title="y coord" />
+        <select defaultValue={token.mapId} onChange={this.onMapSelect.bind(this)} title="which map(s)">
+          <option>(all)</option>
+          {Object.keys(maps).map((key, $i) => (
+            <option key={$i} value={key}>
+              {maps[key].name || maps[key].url || '(unnamed)'}
+            </option>
+          ))}
+        </select>
+        <Button title="Delete token" value="&#x1f5d1;" onClick={this.delete.bind(this)} />
+      </div>
+    else
+      return <div className="tokenConfig">
+        <input value={token.name||''} placeholder="Name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
+        <input value={token.url||''} placeholder="Url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
+        wh:
+        <input value={token.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" step="5" title="width" />
+        <input value={token.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" step="5" title="height" />
+        xy:
+        <input value={token.x||''} placeholder="x" className="text2" onChange={this.onIntegerChange.bind(this, 'x')} type="number" title="x coord" />
+        <input value={token.y||''} placeholder="y" className="text2" onChange={this.onIntegerChange.bind(this, 'y')} type="number" title="y coord" />
+      </div>
   }
 }
 
@@ -238,6 +269,7 @@ class ControlPanel extends React.Component {
 
   renderTokens () {
     if (!this.state.toggleOnTokens) return null;
+    if (!this.props.game.isHost) return null;
     return (<div>
       <hr />
       <input placeholder="New token name (optional)" onChange={this.onTextChange.bind(this, 'newTokenName')} />
@@ -247,6 +279,15 @@ class ControlPanel extends React.Component {
         <TokenConfig key={`token${$i}`} token={token} game={this.props.game} />
       ))}
     </div>)
+  }
+
+  renderSelectedTokensControls () {
+    const tokens = this.props.game.state.tokens.filter(t => t.$selected);
+    return <div>
+      {tokens.map((token, $i) => (
+        <TokenConfig key={`token${$i}`} token={token} game={this.props.game} />
+      ))}
+    </div>
   }
 
   render () {
@@ -277,6 +318,7 @@ class ControlPanel extends React.Component {
         <ToggleButton title="Share mouse (cursor)" value="&#x1f401;" cp={game} />
         <input title="Cursor size" value={game.state.cursorSize||''} onChange={this.setGameInt.bind(this, 'cursorSize')} type="number" min="0" />
         <Button title="Request gameboard refresh from host" onClick={this.socketRequestRefresh.bind(this)} value="&#x1f4ab;" />
+        {this.renderSelectedTokensControls()}
       </div>
   }
 }
