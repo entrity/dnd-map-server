@@ -195,6 +195,15 @@ class Game extends React.Component {
     }
   }
 
+  onMouseUp (evt) {
+    this.setState({
+      lastX: undefined, lastY: undefined,
+    });
+    this.overlayRef.current.setState({
+      lastX: undefined, lastY: undefined,
+    });
+  }
+
   onMouseDown (evt) {
     if (evt.buttons & 1) this.setState({
       lastX: evt.pageX, lastY: evt.pageY,
@@ -319,7 +328,7 @@ class Game extends React.Component {
     const goneKlass = this.state.isFogLoaded ? null : 'gone';
     try {
       return (
-        <div id="game" onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseDown.bind(this)}>
+        <div id="game" onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseDown.bind(this)} onMouseUp={this.onMouseUp.bind(this)}>
           <div className={goneKlass}>
             <Background game={this} ref={this.bgRef} className={goneKlass} />
             <Drawing game={this} ref={this.drawRef} />

@@ -33,8 +33,8 @@ class MapConfig extends React.Component {
   }
 
   onIntegerChange (key, evt) {
-    const value = parseInt(evt.target.value);
-    if (value) this.update(map => map[key] = value);
+    const value = parseInt(evt.target.value) || undefined;
+    this.update(map => map[key] = value);
   }
 
   load () { this.props.game.loadMap(this.props.map) }
@@ -64,8 +64,8 @@ class MapConfig extends React.Component {
       <input value={map.url||''} placeholder="Map url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
       <Button title="Load map" value="&#x1f23a;" onClick={this.load.bind(this)} />
       wh:
-      <input value={map.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" min="1" step="5" title="width" />
-      <input value={map.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" min="1" step="5" title="height" />
+      <input value={map.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" min="0" step="5" title="width" />
+      <input value={map.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" min="0" step="5" title="height" />
       <Button title="Apply geometry changes" value="&#x1f6f5;" onClick={this.applyGeometry.bind(this)} />
       <Button title="Delete map" value="&#x1f5d1;" onClick={this.delete.bind(this)} />
     </div>
