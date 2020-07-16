@@ -14,7 +14,7 @@ class Game extends React.Component {
     window.game = this;
     const params = new URLSearchParams(window.location.href.replace(/.*\?/, ''));
     this.isHost = params.get('host');
-    this.room = window.location.pathname.replace(/^\//, '');
+    this.room = params.get('room');
     this.websocket = new Gamesocket(this);
     this.cpRef = React.createRef();
     this.bgRef = React.createRef();
