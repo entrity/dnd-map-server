@@ -29,21 +29,32 @@ class Overlay extends Canvas {
     else this.draw(x, y);
   }
 
-  draw (x, y) {
+  draw (x, y, opts, noEmit) {
     const game = this.props.game;
     const ctx = this.drawCtx;
+    opts = Object.assign({
+      x: x, y: y,
+      color: game.state.drawColor,
+      size: game.state.drawSize,
+      x0: this.state.lastX || x,
+      y0: this.state.lastY || y,
+    }, opts);
     ctx.beginPath();
-    ctx.moveTo(this.state.lastX || x, this.state.lastY || y);
+    ctx.moveTo(opts.x0, opts.y0);
     ctx.lineTo(x, y);
-    ctx.strokeStyle = game.state.drawColor;
-    ctx.lineWidth = game.state.drawSize;
+    ctx.strokeStyle = opts.color;
+    ctx.lineWidth = opts.size;
     ctx.stroke();
-    this.setState({lastX: x, lastY: y});
+    if (!noEmit) {
+      this.setState({lastX: x, lastY: y});
+      this.props.game.websocket.pushDraw(opts);
+    }
   }
 
-  erase (x, y) {
-    let radius = this.props.game.state.drawSize;
+  erase (x, y, r, noEmit) {
+    const radius = r || this.props.game.state.drawSize;
     this.drawCtx.clearRect(x-radius, y-radius, radius*2, radius*2);
+    if (!noEmit) this.props.game.websocket.pushErase(x, y, radius);
   }
 
   isEraser () { return this.props.game.state.subtool === 'eraser' }

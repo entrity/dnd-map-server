@@ -67,6 +67,12 @@ class Gamesocket {
         if (data.u !== this.game.state.username)
           this.game.updateCursors(data.x, data.y, data.u, data.from);
         break;
+      case 'd': /* draw */
+        this.game.overlayRef.current.draw(data.x, data.y, data, true);
+        break;
+      case 'e': /* erase */
+        this.game.overlayRef.current.erase(data.x, data.y, data.r, true);
+        break;
       case 'f': /* fog erasure */
         this.game.overlayRef.current.fogErase(data.x, data.y, data.r, data.r2, true);
         break;
@@ -96,11 +102,10 @@ class Gamesocket {
     }
   }
 
-  /* Push cursor position */
   pushCursor (x, y) { this.send({t: 'c', x: x, y: y, u: this.game.state.username}) }
-  /* Push fog erasure */
+  pushDraw (data) { this.send(Object.assign({t: 'd'}, data)) }
+  pushErase (x, y, r) { this.send({t: 'e', x: x, y: y, r: r}) }
   pushFogErase (x, y, r, r2) { this.send({t: 'f', x: x, y: y, r: r, r2: r2}) }
-  /* Push map id */
   pushMapId (mapId) { this.send({t: 'm', i: mapId}) }
   /* Push refresh */
   pushRefresh (additionalAttrs) {
