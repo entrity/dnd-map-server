@@ -261,7 +261,7 @@ class ControlPanel extends React.Component {
         <ToggleButton title="User" value="&#x1f9d9;&#x200d;&#x2642;&#xfe0f;" cp={this} />
         <ToggleButton title="Maps" value="&#x1f5fa;" cp={this} />
         <ToggleButton title="Tokens" value="&#x265f;" cp={this} />
-        <Button title="Push refresh to players" value="&#x1f4ab;" onClick={game.websocket.pushRefresh.bind(game.websocket)} />
+        <Button title="Push refresh to players" value="&#x1f4ab;" onClick={game.websocket.pushRefresh.bind(game.websocket, {})} />
         |||
         {this.renderToolSelect()}
         |||

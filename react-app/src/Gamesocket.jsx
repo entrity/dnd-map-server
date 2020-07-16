@@ -61,7 +61,7 @@ class Gamesocket {
 	/* Receive message from server */
 	receive (evt) {
 		let data = JSON.parse(evt.data);
-    if (data.from === this.guid) return;
+    if (data.from === this.guid) return; /* ignore messages sent by self */
 		switch (data.t) {
       case 'c': /* cursor push */
         if (data.u !== this.game.state.username)
@@ -85,7 +85,7 @@ class Gamesocket {
         break;
       case 'refresh': /* refresh from host */
         let {from, typ, to, ...state} = data;
-        if (to && to !== this.game.state.username) return;
+        if (to && to !== this.guid) return;
         this.game.fromJson(JSON.stringify(state));
         break;
       case 'refreshRequest': /* refresh request from player */
@@ -105,7 +105,7 @@ class Gamesocket {
   /* Push refresh */
   pushRefresh (additionalAttrs) {
     let attrs = Object.assign({t: 'refresh'}, additionalAttrs);
-    let json = this.game.toJson(attrs);
+    let json = this.game.toJson(additionalAttrs);
     this.send(JSON.parse(json));
   }
   /* Push token update */

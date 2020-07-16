@@ -66,11 +66,15 @@ class Game extends React.Component {
     let kiwiMap = {
       name: 'kiwi', url: '/kiwi.jpeg', $id: 1,
     };
-    return new Promise(res => {
+    return new Promise(resolve => {
       this.setState({
         maps: Object.fromEntries([defaultMap, kiwiMap].map(m => [m.$id, m])),
         tokens: tokens,
-      }, res);
+        mapId: kiwiMap.$id,
+      }, () => {
+        this.loadMap();
+        resolve();
+      });
     });
   }
 
@@ -216,10 +220,12 @@ class Game extends React.Component {
   }
 
   toJson (additionalAttrs) {
+    const tokens = this.state.tokens.map(token => ({...token}));
+    tokens.forEach(token => this.scrubObject(token));
     const data = Object.assign({}, {
       maps: this.dumpMaps(),
       mapId: this.map && this.map.$id,
-      tokens: this.state.tokens, /* todo: remove $selected, etc s.t. other players aren't affected */
+      tokens: tokens,
     }, additionalAttrs);
     return JSON.stringify(data);
   }
@@ -265,11 +271,7 @@ class Game extends React.Component {
           <ControlPanel game={this} ref={this.cpRef} />
         </div>
       );
-    } catch (ex) {
-      console.error(ex);
-      console.error('Exception in `render`. Clearing localStorage...');
-      localStorage.removeItem(this.room);
-    }
+    } catch (ex) { handleError(ex) }
   }
 
   renderCursors () {
@@ -287,11 +289,13 @@ class Game extends React.Component {
   }
 
   renderTokens () {
-    return <div id="tokens">
-      {this.state.tokens.map((token, $i) => (
-        <Token key={`Token${$i}`} token={token} game={this} />
-      ))}
-    </div>;
+    try {
+      return <div id="tokens">
+        {this.state.tokens.map((token, $i) => (
+          <Token key={`Token${$i}`} token={token} game={this} />
+        ))}
+      </div>;
+    } catch (ex) { handleError(ex) }
   }
 }
 export default Game;
@@ -308,4 +312,11 @@ function Cursor (props) {
     <span role="img" aria-label="pointer" style={imgStyle}>&#x1f5e1;</span>
     {cur.u || props.name}
   </div>
+}
+
+function handleError (ex) {
+  console.error(ex);
+  console.error('Exception in `render`. Clearing localStorage...');
+  localStorage.removeItem(this.room);
+  window.alert('Fatal error. Local storage cleared.');
 }
