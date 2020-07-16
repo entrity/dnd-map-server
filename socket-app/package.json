@@ -4,6 +4,7 @@
   "description": "nunya",
   "main": "index.js",
   "scripts": {
+    "daemon": ">/dev/null nohup node index.js &",
     "start": "node index.js"
   },
   "author": "Markham Anderson",

@@ -3,6 +3,7 @@ https://github.com/websockets/ws/tree/master/examples
 https://github.com/theturtle32/WebSocket-Node/blob/master/docs/index.md
 */
 
+const fs = require('fs');
 const webSocketsServerPort = 8000;
 const webSocketServer = require('ws').Server;
 const http = require('http');
@@ -12,9 +13,18 @@ const ws = new webSocketServer({
   autoAcceptConnections: true,
 });
 
+fs.writeFile('pid.tmp', process.pid, err => {
+	if (err) return console.log(err);
+	console.log(`process id ${process.pid}`);
+});
+
 ws.on('connection', function (connection, request) {
   connection.on('message', onMessage);
-  connection.room = request.url;
+  let [room, params] = request.url.split('?');
+  connection.room = room;
+  params = new URLSearchParams(params);
+  connection.guid = params.get('guid');
+  console.log(connection.room, 'id', connection.guid) /*todo*/
 });
 
 
@@ -27,11 +37,14 @@ function isExpired (obj) {
 }
 
 function onMessage (msg) {
+  const data = JSON.parse(msg);
   /* Forward message to all other clients (for this room) */
-  if (JSON.parse(msg).typ) {
+  if (data.t) {
+    data.from = this.guid;
     ws.clients.forEach(conn => {
       if (conn.room !== this.room) return;
-      if (conn !== this) { conn.send(msg) }
+      if (data.to && data.to !== conn.guid) return;
+      if (conn !== this) { conn.send(JSON.stringify(data)) }
     });
   /* Assign key-val to this connection (e.g. isHost) */
   } else {

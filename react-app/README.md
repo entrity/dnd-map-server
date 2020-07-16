@@ -1,31 +1,3 @@
-# D&D Maps Server
-
-Serves interactive maps to an entire party. The host has control over where the fog covers, when maps are changed out for replacements, and where NPC's are located.
-
-The non-hosts can move PC tokens and view the map.
-
-Websockets keep everyone updated in realtime.
-
-## Reference
-
-### Websockets
-
-- https://reactjs.org/docs/add-react-to-a-website.html
-- https://blog.logrocket.com/websockets-tutorial-how-to-go-real-time-with-node-and-react-8e4693fbf843/
-- https://dev.to/finallynero/using-websockets-in-react-4fkp
-
-### React
-
-https://reactjs.org/docs/create-a-new-react-app.html#create-react-app
-
-
-
-
-
-
-
-
-
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
