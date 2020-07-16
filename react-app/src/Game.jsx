@@ -5,6 +5,7 @@ import Fog from './Fog.jsx';
 import Overlay from './Overlay.jsx';
 import ControlPanel from './ControlPanel.jsx';
 import Token from './Token.jsx';
+import Gamesocket from './Gamesocket.jsx';
 
 class Game extends React.Component {
 
@@ -13,6 +14,8 @@ class Game extends React.Component {
     window.game = this;
     const params = new URLSearchParams(window.location.href.replace(/.*\?/, ''));
     this.isHost = params.get('host');
+    this.room = window.location.pathname.replace(/^\//, '');
+    this.websocket = new Gamesocket(this);
     this.cpRef = React.createRef();
     this.bgRef = React.createRef();
     this.fogRef = React.createRef();
@@ -21,7 +24,7 @@ class Game extends React.Component {
     this.state = {
       maps: {},
       tokens: [],
-      cursors: [],
+      cursors: {},
       cursorSize: 50,
       fogOpacity: 0.5,
       fogUrl: undefined, /* data url */
@@ -31,7 +34,8 @@ class Game extends React.Component {
       drawColor: 'purple',
       drawSize: 44,
       tool: 'move',
-      room: params.get('room') || 'defaultRoom',
+      username: this.isHost ? 'DM' : 'PC',
+      ['toggleOnShare mouse (cursor)']: true,
     };
   }
 
@@ -70,18 +74,32 @@ class Game extends React.Component {
     });
   }
 
-  updateTokens (callback) {
+  updateTokens (callback, noEmit) {
     const tokensCopy = JSON.parse(JSON.stringify(this.state.tokens));
     tokensCopy.forEach(callback);
     this.setState({tokens: tokensCopy});
+    if (!noEmit && this.websocket) this.websocket.pushTokens(tokensCopy);
   }
 
-  updateToken (token, callback) {
+  updateToken (token, callback, noEmit) {
     const tokenIdx = this.state.tokens.indexOf(token);
     const tokensCopy = JSON.parse(JSON.stringify(this.state.tokens));
     const tokenCopy = tokensCopy[tokenIdx];
     callback(tokenCopy, tokenIdx, tokensCopy);
     this.setState({tokens: tokensCopy});
+    if (!noEmit && this.websocket) this.websocket.pushTokens(tokenIdx, tokenCopy);
+  }
+
+  updateTokenByIndex (index, attrs, noEmit) {
+    const tokensCopy = JSON.parse(JSON.stringify(this.state.tokens));
+    const tokenCopy = Object.assign(tokensCopy[index], attrs);
+    this.setState({tokens: tokensCopy});
+    if (!noEmit && this.websocket) this.websocket.pushTokens(index, tokenCopy);
+  }
+
+  /* Mutate object to remove keys that begin with `$` */
+  scrubObject (object) {
+    for (let key in object) if (/^\$/.test(key)) delete object[key];
   }
 
   selectToken (token, trueFalse, multiSelect) {
@@ -135,9 +153,16 @@ class Game extends React.Component {
         break;
       case 'move':
         if (evt.buttons & 1) this.dragSelectedTokens(evt);
-      default: return;
     }
     this.setState({lastX: evt.pageX, lastY: evt.pageY});
+    if (this.websocket && this.state['toggleOnShare mouse (cursor)'])
+      this.websocket.pushCursor(evt.pageX, evt.pageY);
+  }
+
+  updateCursors (x, y, name, guid) {
+    const cursors = Object.assign({}, this.state.cursors);
+    cursors[guid] = { x: x, y: y, time: new Date(), u: name };
+    this.setState({cursors: cursors});
   }
 
   /* Copy maps and dump current map, suitable for save to state or localStorage */
@@ -161,7 +186,7 @@ class Game extends React.Component {
   }
 
   /* From state to playarea */
-  loadMap (map, skipSave) {
+  loadMap (map, skipSave, noEmit) {
     if (!map) map = this.map;
     if (!map) return Promise.reject('no map');
     if (undefined === map.$id) map.$id = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
@@ -180,19 +205,21 @@ class Game extends React.Component {
               this.drawRef.current.load(),
             ]).then(() => {
               this.setState(finishStateAttrs);
-            });
-          });
+            }).catch(arg => console.error('fail loads'));
+          }).catch(arg => console.error('fail load bgRef'));
         });
       });
-    });
+    }).catch(arg => console.error('fail savePromise'));
+    if (!noEmit && this.isHost && this.websocket) this.websocket.pushMapId(map.$id);
   }
 
-  toJson () {
-    return JSON.stringify({
+  toJson (additionalAttrs) {
+    const data = Object.assign({}, {
       maps: this.dumpMaps(),
       mapId: this.map && this.map.$id,
-      tokens: this.state.tokens, /* todo: rm $selected, etc s.t. other players aren't affected */
-    });
+      tokens: this.state.tokens, /* todo: remove $selected, etc s.t. other players aren't affected */
+    }, additionalAttrs);
+    return JSON.stringify(data);
   }
 
   fromJson (json) {
@@ -206,13 +233,13 @@ class Game extends React.Component {
   saveToLocalStorage () {
     if (this.state.isFirstLoadDone) {
       console.log('Saving game to local storage');
-      localStorage.setItem(this.state.room, this.toJson());
+      localStorage.setItem(this.room, this.toJson());
     }
   }
 
   loadFromLocalStorage () {
     console.log('Loading game from local storage');
-    return this.fromJson(localStorage.getItem(this.state.room));
+    return this.fromJson(localStorage.getItem(this.room));
   }
 
   get map () {
@@ -239,28 +266,22 @@ class Game extends React.Component {
     } catch (ex) {
       console.error(ex);
       console.error('Exception in `render`. Clearing localStorage...');
-      localStorage.removeItem(this.state.room);
+      localStorage.removeItem(this.room);
     }
   }
 
   renderCursors () {
     const deadline = new Date() - 30000;
-    const state = this.state;
-    const cursors = this.state.cursors.filter(cur => cur.time > deadline);
-    return <div id="cursors">
-      {cursors.map((cur, $i) => {
-        const divStyle = {
-          top: cur.y, left: cur.x,
-        };
-        const imgStyle = {
-          fontSize: state.cursorSize || undefined,
-        };
-        return <div key={`cursor${$i}`} style={divStyle} className="cursor">
-          <span role="img" aria-label="pointer" style={imgStyle}>&#x1f5e1;</span>
-          {cur.u}
-        </div>
-      })}
-    </div>;
+    const cursors = Object.assign({}, this.state.cursors);
+    for (let name in cursors) {
+      let time = cursors[name].time;
+      if (!time || time < deadline) delete cursors[name];
+    }
+    return (<div id="cursors">
+      {Object.keys(cursors).map((key, $i) => (
+        <Cursor key={`cursor${$i}`} name={key} cursor={cursors[key]} size={this.state.cursorSize} />
+      ))}
+    </div>);
   }
 
   renderTokens () {
@@ -272,3 +293,17 @@ class Game extends React.Component {
   }
 }
 export default Game;
+
+function Cursor (props) {
+  const cur = props.cursor;
+  const divStyle = {
+    top: cur.y, left: cur.x,
+  };
+  const imgStyle = {
+    fontSize: props.size || undefined,
+  };
+  return <div style={divStyle} className="cursor">
+    <span role="img" aria-label="pointer" style={imgStyle}>&#x1f5e1;</span>
+    {cur.u || props.name}
+  </div>
+}

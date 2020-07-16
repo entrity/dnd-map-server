@@ -11,7 +11,7 @@ class Overlay extends Canvas {
   get drawCtx () { return this.props.game.drawRef.current.canvasRef.current.getContext('2d') }
   get fogCtx () { return this.props.game.fogRef.current.canvasRef.current.getContext('2d') }
 
-  fogErase (x, y, r, r2) {
+  fogErase (x, y, r, r2, noEmit) {
     const ctx = this.fogCtx;
     if (!r) r = this.props.game.state.fogRadius;
     ctx.globalCompositeOperation = 'destination-out';
@@ -21,6 +21,7 @@ class Overlay extends Canvas {
     ctx.fillStyle = grad;
     ctx.fillRect(x-r,y-r,x+r,y+r);
     ctx.globalCompositeOperation = 'destination-over';
+    if (!noEmit) this.props.game.websocket.pushFogErase(x, y, r, r2);
   }
 
   drawOrErase (x, y) {

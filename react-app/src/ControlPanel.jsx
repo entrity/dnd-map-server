@@ -147,6 +147,7 @@ class ControlPanel extends React.Component {
     tokensCopy.push({name: this.state.newTokenName});
     game.setState({tokens: tokensCopy});
     this.setState({newTokenName: undefined});
+    game.websocket.pushTokens(tokensCopy);
   }
 
   resetFog () { this.props.game.fogRef.current.fill(); }
@@ -167,6 +168,10 @@ class ControlPanel extends React.Component {
       const json = window.navigator.clipboard.readText();
       this.props.game.fromJson(json);
     }
+  }
+
+  socketRequestRefresh () {
+    this.props.game.socket.requestRefresh();
   }
 
   renderToolSelect () {
@@ -222,7 +227,7 @@ class ControlPanel extends React.Component {
     return <div>
       <hr />
       <input title="User name" placeholder="User name" value={game.state.username||''} onChange={this.setGameText.bind(this, 'username')} />
-      <ToggleButton title="Share mouse (cursor)" value="&#x1f401;" cp={this} />
+      <ToggleButton title="Share mouse (cursor)" value="&#x1f401;" cp={game} />
       <input title="Cursor size" value={game.state.cursorSize||''} onChange={this.setGameInt.bind(this, 'cursorSize')} type="number" min="0" />
       <hr />
       <Button title="Redo as dev" value="&#x1f530;" onClick={game.initAsDev.bind(game)} />
@@ -270,7 +275,9 @@ class ControlPanel extends React.Component {
       return <div id="control-panel">
         {toggleHiddenButton}
         <input title="User name" placeholder="User name" value={game.state.username||''} onChange={this.setGameText.bind(this, 'username')} />
+        <ToggleButton title="Share mouse (cursor)" value="&#x1f401;" cp={game} />
         <input title="Cursor size" value={game.state.cursorSize||''} onChange={this.setGameInt.bind(this, 'cursorSize')} type="number" min="0" />
+        <Button title="Request gameboard refresh from host" onClick={this.socketRequestRefresh.bind(this)} value="&#x1f4ab;" />
       </div>
   }
 }

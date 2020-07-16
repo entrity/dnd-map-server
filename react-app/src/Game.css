@@ -92,6 +92,7 @@ canvas#fog {
 	font-family: "Noto Color Emoji";
 	opacity: 0.5;
 	font-size: 13;
+	text-shadow: 2px 1px white;
 }
 .cursor > span {
 	text-shadow: 1px 1px white;
