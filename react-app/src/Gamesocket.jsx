@@ -84,7 +84,7 @@ class Gamesocket {
         this.game.loadMap(map);
         break;
       case 'refresh': /* refresh from host */
-        let {from, typ, to, ...state} = data;
+        let {from, t, to, ...state} = data;
         if (to && to !== this.guid) return;
         this.game.fromJson(JSON.stringify(state));
         break;
@@ -104,8 +104,8 @@ class Gamesocket {
   pushMapId (mapId) { this.send({t: 'm', i: mapId}) }
   /* Push refresh */
   pushRefresh (additionalAttrs) {
-    let attrs = Object.assign({t: 'refresh'}, additionalAttrs);
-    let json = this.game.toJson(additionalAttrs);
+    const attrs = Object.assign({t: 'refresh'}, additionalAttrs);
+    let json = this.game.toJson(attrs);
     this.send(JSON.parse(json));
   }
   /* Push token update */
