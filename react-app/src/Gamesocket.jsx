@@ -74,7 +74,7 @@ class Gamesocket {
         this.game.fogRef.current.fill();
         break;
       case 't': /* token */
-        this.game.updateTokenByIndex(data.i, data.t, true);
+        this.game.updateTokenByIndex(data.i, data.a, true);
         break;
       case 'ts': /* all tokens */
         this.game.setState({tokens: data.tokens});
@@ -91,6 +91,8 @@ class Gamesocket {
       case 'refreshRequest': /* refresh request from player */
         if (this.game.isHost) this.pushRefresh({to: data.from});
         break;
+      default:
+        console.error(`Unrecognized websocket message type: ${data.t}`);
     }
   }
 
@@ -108,8 +110,9 @@ class Gamesocket {
   }
   /* Push token update */
   pushToken (index, token) {
-    const data = Object.assign(token, {t: 't', i: index});
-    this.game.scrubObject(data);
+    const tokenCopy = Object.assign({}, token);
+    this.game.scrubObject(tokenCopy);
+    const data = {t: 't', i: index, a: tokenCopy};
     this.send(data);
   }
   /* Push replacement of all tokens */

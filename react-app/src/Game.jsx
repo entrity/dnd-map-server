@@ -35,7 +35,7 @@ class Game extends React.Component {
       drawSize: 44,
       tool: 'move',
       username: this.isHost ? 'DM' : 'PC',
-      ['toggleOnShare mouse (cursor)']: true,
+      'toggleOnShare mouse (cursor)': true,
     };
   }
 
@@ -54,10 +54,10 @@ class Game extends React.Component {
   initAsDev () {
     if (!window.confirm('Reset?')) return null;
     let tokens = [
-      {name: 'bar', pc: 0, all: true},
-      {name: 'foo', url: '/belmont.jpg', all: true},
-      {name: 'arr', pc: 1, all: true},
-      {name: 'win', pc: 1, url: '/redhead.jpg', y: 50, x: 90, w: 64, h:64, all: true},
+      {name: 'bar', pc: 0},
+      {name: 'foo', url: '/belmont.jpg'},
+      {name: 'arr', pc: 1},
+      {name: 'win', pc: 1, url: '/redhead.jpg', y: 50, x: 90, w: 64, h:64},
     ];
     let defaultMap = {
       url: "/FFtri9T.png",
@@ -87,14 +87,14 @@ class Game extends React.Component {
     const tokenCopy = tokensCopy[tokenIdx];
     callback(tokenCopy, tokenIdx, tokensCopy);
     this.setState({tokens: tokensCopy});
-    if (!noEmit && this.websocket) this.websocket.pushTokens(tokenIdx, tokenCopy);
+    if (!noEmit && this.websocket) this.websocket.pushToken(tokenIdx, tokenCopy);
   }
 
   updateTokenByIndex (index, attrs, noEmit) {
     const tokensCopy = JSON.parse(JSON.stringify(this.state.tokens));
     const tokenCopy = Object.assign(tokensCopy[index], attrs);
     this.setState({tokens: tokensCopy});
-    if (!noEmit && this.websocket) this.websocket.pushTokens(index, tokenCopy);
+    if (!noEmit && this.websocket) this.websocket.pushToken(index, tokenCopy);
   }
 
   /* Mutate object to remove keys that begin with `$` */
@@ -153,6 +153,8 @@ class Game extends React.Component {
         break;
       case 'move':
         if (evt.buttons & 1) this.dragSelectedTokens(evt);
+        break;
+      default: break;
     }
     this.setState({lastX: evt.pageX, lastY: evt.pageY});
     if (this.websocket && this.state['toggleOnShare mouse (cursor)'])
@@ -192,6 +194,7 @@ class Game extends React.Component {
     if (undefined === map.$id) map.$id = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
     const needsSave = this.state.isFirstLoadDone && !skipSave;
     const savePromise = needsSave ? this.saveMap() : Promise.resolve();
+    if (!noEmit && this.isHost && this.websocket) this.websocket.pushMapId(map.$id);
     return savePromise.then(() => {
       return new Promise((resolve, reject) => {
         console.log('loading $id', map.$id);
@@ -210,7 +213,6 @@ class Game extends React.Component {
         });
       });
     }).catch(arg => console.error('fail savePromise'));
-    if (!noEmit && this.isHost && this.websocket) this.websocket.pushMapId(map.$id);
   }
 
   toJson (additionalAttrs) {

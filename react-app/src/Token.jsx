@@ -26,7 +26,7 @@ class Token extends React.Component {
     const mapId = this.props.game.state.mapId;
     const token = this.props.token;
     if (!token.url || !token.url.trim()) return null;
-    if ([undefined, null, mapId].indexOf(token.mapId) >= 0) {
+    if ([undefined, null].indexOf(token.mapId) >= 0 || mapId == token.mapId) {
       const klasses = ['token',
         token.ko && 'dead',
         token.pc ? 'pc' : 'npc',
