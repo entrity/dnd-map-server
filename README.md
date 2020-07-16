@@ -11,9 +11,9 @@ You have two applications to run on your server:
 Just build the application, then put its static assets into a webserver and serve them up. Have your players connect to `http(s)://yourdomain.com/?room=YOURROOM`. The DM should include an additional `host=1` paramter in the query string.
 
 ```bash
-cd web-app
-npm run build
-scp -r build YOURSERVER:
+cd react-app
+npm start # run local server
+npm run build # build for deploy
 ```
 
 In development, start the development server with `npm start`.
@@ -22,6 +22,12 @@ In development, start the development server with `npm start`.
 
 Put the `socket-app` directory on your server and start up the application with `npm start`. This will run a small websockets server which just relays messages between players. (Messages only go to players in the same room as whoever send the message.)
 
+```bash
+cd socket-app
+npm run daemon # run on server using nohup
+npm start # run locally
+```
+
 ## Storage
 
 The images for maps and character tokens are just provided as URLs and get loaded from whatever server is hosting them.
@@ -29,7 +35,6 @@ The images for maps and character tokens are just provided as URLs and get loade
 The configuration of maps and tokens is stored as a JSON string of nested objects in your browser's `localStorage`. The `localStorage` key is the name of the "room" to which you and your party are connected. (Set the `room` parameter of your URL to any arbitrary string you choose.)
 
 ## Third-party resources
-
 
 ### Maps resources
 
