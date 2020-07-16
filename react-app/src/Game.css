@@ -13,6 +13,10 @@
 	--z-cp: 100;
 }
 
+body {
+	background-color: #333333;
+}
+
 #root {
 	position: relative;
 }

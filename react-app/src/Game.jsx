@@ -320,8 +320,8 @@ class Game extends React.Component {
     try {
       return (
         <div id="game" onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseDown.bind(this)}>
-          <Background game={this} ref={this.bgRef} className={goneKlass} />
           <div className={goneKlass}>
+            <Background game={this} ref={this.bgRef} className={goneKlass} />
             <Drawing game={this} ref={this.drawRef} />
             {this.renderTokens()}
             <Fog game={this} ref={this.fogRef} />
