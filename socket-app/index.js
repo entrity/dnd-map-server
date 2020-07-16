@@ -3,6 +3,7 @@ https://github.com/websockets/ws/tree/master/examples
 https://github.com/theturtle32/WebSocket-Node/blob/master/docs/index.md
 */
 
+const fs = require('fs');
 const webSocketsServerPort = 8000;
 const webSocketServer = require('ws').Server;
 const http = require('http');
@@ -10,6 +11,11 @@ const httpServer = http.createServer();
 const ws = new webSocketServer({
   server: httpServer,
   autoAcceptConnections: true,
+});
+
+fs.writeFile('pid.tmp', process.pid, err => {
+	if (err) return console.log(err);
+	console.log(`process id ${process.pid}`);
 });
 
 ws.on('connection', function (connection, request) {
