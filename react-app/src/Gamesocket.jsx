@@ -18,6 +18,7 @@ class Gamesocket {
   setup () {
     let host = window.location.host.replace(/:\d+$/, '');
     let room = this.game.room;
+    const protocol = /https/.test(window.location.protocol) ? 'wss' : 'ws';
     this.guid = URL.createObjectURL(new Blob()).replace(/.*\//, '');
 		console.log('Trying to establish websocket connection', host, room);
 		if (window[K_INTERVAL]) clearInterval(window[K_INTERVAL]);
@@ -27,7 +28,7 @@ class Gamesocket {
 			delete window[K_SOCKET]; /* Delete, then close, s.t. cb doesn't re-open it */
 			socket.close();
 		}
-		window[K_SOCKET] = new WebSocket(`ws://${host}:8000/${room}?guid=${this.guid}`);
+		window[K_SOCKET] = new WebSocket(`${protocol}://${host}:8000/${room}?guid=${this.guid}`);
 		this.addCallbacks();
 	}
 

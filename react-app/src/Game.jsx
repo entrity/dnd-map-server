@@ -140,6 +140,9 @@ class Game extends React.Component {
   onResize () { this.loadMap(null, true) }
 
   onKeyDown (evt) {
+    for (let x of [document.activeElement, evt.target])
+      if (x.tagName == 'INPUT' && (x.type === 'text' || x.type === 'number'))
+        return evt;
     const moveFactor = evt.shiftKey ? 100 : 10;
     const moveSelectedTokens = () => {
       this.updateTokens(token => {
@@ -168,8 +171,9 @@ class Game extends React.Component {
 
   onKeyPress (evt) {
     if (!this.isHost) return evt;
-    if (evt.target.tagName === 'INPUT' && evt.target.type === 'text')
-      return evt;
+    for (let x of [document.activeElement, evt.target])
+      if (x.tagName == 'INPUT' && (x.type === 'text' || x.type === 'number'))
+        return evt;
     function toggle (key, location) {
       (location||this).setState({[key]: !(location||this).state[key]});
     }

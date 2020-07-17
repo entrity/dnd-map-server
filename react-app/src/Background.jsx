@@ -26,7 +26,10 @@ class Background extends Canvas {
       if (!w) w = (this.map && this.map.w) || window.innerWidth;
       if (!h) h = (this.map && this.map.h) || window.innerHeight;
       let canvases = document.querySelectorAll('canvas');
-      if (canvases[0].width === w || canvases[0].height === h)
+      const noChangeNeeded = Array.from(canvases).reduce((prev, canv) => (
+        prev && canv.width === w && canv.height === h
+      ), true);
+      if (noChangeNeeded)
         resolve(w, h);
       else
         this.props.game.setState({ w: w, h: h, isFogLoaded: false }, () => {
