@@ -43,9 +43,11 @@ class Canvas extends React.Component {
           w = h * img.width / img.height;
         else if (!h)
           h = w * img.height / img.width;
-        if (this.resizeCanvases) this.resizeCanvases(w, h);
-        ctx.drawImage(img, this.map.x || 0, this.map.y || 0, w, h);
-        resolve(w, h);
+        const promise = this.resizeCanvases ? this.resizeCanvases(w, h) : Promise.resolve();
+        promise.then(() => {
+          ctx.drawImage(img, this.map.x || 0, this.map.y || 0, w, h);
+          resolve(w, h);
+        });
       }
       img.onerror = () => {
         // NotificationManager.error(`${img.src && img.src.substr(0,155)}...`, 'drawMap: bad url');

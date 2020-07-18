@@ -1,21 +1,40 @@
 /* cf.
 https://github.com/websockets/ws/tree/master/examples
 https://github.com/theturtle32/WebSocket-Node/blob/master/docs/index.md
+https://blog.zackad.dev/en/2017/08/19/create-websocket-with-nodejs.html
 */
 
-const fs = require('fs');
-const webSocketsServerPort = 8000;
-const webSocketServer = require('ws').Server;
-const http = require('http');
-const httpServer = http.createServer();
-const ws = new webSocketServer({
-  server: httpServer,
-  autoAcceptConnections: true,
-});
+const PRIVATE_KEY_FILE = 'privkey.pem';
+const SSl_CERTIFICATE_FILE = 'fullchain.pem';
+const SOCKET_SERVER_PORT = 8000;
 
+const fs = require('fs');
+
+/* Write pid file*/
 fs.writeFile('pid.tmp', process.pid, err => {
 	if (err) return console.log(err);
 	console.log(`process id ${process.pid}`);
+});
+
+var httpServer;
+
+/* Check SSL files & create HTTPS server */
+if (fs.existsSync(PRIVATE_KEY_FILE) && fs.existsSync(SSl_CERTIFICATE_FILE)) {
+	const privateKey = fs.readFileSync(PRIVATE_KEY_FILE, 'utf-8');
+	const certificate = fs.readFileSync(SSl_CERTIFICATE_FILE, 'utf-8');
+	const https = require('https');
+	httpServer = https.createServer({key: privateKey, cert: certificate});
+}
+/* Create HTTP server*/
+else {
+	const http = require('http');
+	httpServer = http.createServer();
+}
+
+const webSocketServer = require('ws').Server;
+const ws = new webSocketServer({
+  server: httpServer,
+  autoAcceptConnections: true,
 });
 
 ws.on('connection', function (connection, request) {
@@ -33,7 +52,7 @@ function isExpired (obj) {
   let then = obj.createdAt;
   if (!then) return true;
   let now = new Date();
-  return now - then > 1000 * 60 * 60 * 24;
+  return now - then > 1000 * 60 * 60 * 3;
 }
 
 function onMessage (msg) {
@@ -53,4 +72,4 @@ function onMessage (msg) {
 }
 
 console.log('starting...')
-httpServer.listen(webSocketsServerPort);
+httpServer.listen(SOCKET_SERVER_PORT);
