@@ -34,9 +34,8 @@ class MapConfig extends React.Component {
     return this.onIntegerChange(key, evt).then(() => {
       const game = this.props.game;
       if (game.bgRef.current && this.props.mapId == game.state.mapId) {
-        game.bgRef.current.resizeCanvases();
-        game.loadMap();
-      }
+        return game.loadMap();
+      } else return Promise.resolve();
     });
   }
 

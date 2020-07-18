@@ -40,11 +40,11 @@ class Game extends React.Component {
   }
 
   componentDidMount () {
-    this.loadFromLocalStorage();
     window.addEventListener('beforeunload', this.saveToLocalStorage.bind(this));
     window.addEventListener('resize', this.onResize.bind(this));
     window.addEventListener('keypress', this.onKeyPress.bind(this));
     window.addEventListener('keydown', this.onKeyDown.bind(this));
+    this.loadFromLocalStorage();
   }
 
   componentWillUnmount () {
@@ -244,22 +244,23 @@ class Game extends React.Component {
     this.setState({cursors: cursors});
   }
 
-  /* Copy maps and dump current map, suitable for save to state or localStorage */
+  /* Copy maps and dump current data urls, suitable for save to state or localStorage */
   dumpMaps () {
     let mapId = this.state.mapId;
     /* Infer map id if it's not set */
     if (undefined === mapId) mapId = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
     const mapsCopy = JSON.parse(JSON.stringify(this.state.maps));
     const map = mapsCopy[mapId];
-    if (!map) return Promise.resolve(); /* Map may have been deleted*/
-    map.fogUrl = this.fogRef.current.buildDataUrl();
-    map.drawUrl = this.drawRef.current.buildDataUrl();
+    if (map && this.state.isFirstLoadDone) { /* Map may have been deleted */
+      map.fogUrl = this.fogRef.current.buildDataUrl();
+      map.drawUrl = this.drawRef.current.buildDataUrl();
+    }
     return mapsCopy;
   }
 
   /* From playarea to state */
   saveMap () {
-    return new Promise((resolve, reject) => {      
+    return new Promise((resolve, reject) => {
       this.setState({ maps: this.dumpMaps() }, resolve);
     });
   }
@@ -268,6 +269,7 @@ class Game extends React.Component {
   loadMap (map, skipSave, noEmit) {
     if (!map) map = this.map;
     if (!map) return Promise.reject('no map');
+    this.saveMap();
     if (undefined === map.$id) map.$id = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
     const needsSave = this.state.isFirstLoadDone && !skipSave;
     const savePromise = needsSave ? this.saveMap() : Promise.resolve();
@@ -284,7 +286,7 @@ class Game extends React.Component {
               this.fogRef.current.load(),
               this.drawRef.current.load(),
             ]).then(() => {
-              this.setState(finishStateAttrs);
+              this.setState(finishStateAttrs, resolve);
             }).catch(arg => console.error('fail loads'));
           }).catch(arg => console.error('fail load bgRef'));
         });
@@ -307,7 +309,9 @@ class Game extends React.Component {
     const overrides = {};
     const data = Object.assign(JSON.parse(json)||{}, overrides);
     return new Promise(resolve => {
-      this.setState(data, () => resolve(this.loadMap()));
+      this.setState(data, () => {
+        this.loadMap().then(resolve);
+      });
     });
   }
 
