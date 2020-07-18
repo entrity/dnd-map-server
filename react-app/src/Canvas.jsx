@@ -34,8 +34,15 @@ class Canvas extends React.Component {
       const ctx = this.getContext();
       const img = new Image();
       img.onload = () => {
-        let w = this.map.w || img.width;
-        let h = this.map.h || img.height;
+        let w = this.map.w;
+        let h = this.map.h;
+        if (!w && !h) {
+          w = img.width;
+          h = img.height;
+        } else if (!w)
+          w = h * img.width / img.height;
+        else if (!h)
+          h = w * img.height / img.width;
         if (this.resizeCanvases) this.resizeCanvases(w, h);
         ctx.drawImage(img, this.map.x || 0, this.map.y || 0, w, h);
         resolve(w, h);
