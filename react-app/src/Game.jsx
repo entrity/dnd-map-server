@@ -238,6 +238,17 @@ class Game extends React.Component {
       this.websocket.pushCursor(evt.pageX, evt.pageY);
   }
 
+  notify (msg, ttl) {
+    if (window.Notification) {
+      if (window.Notification.permission !== 'granted')
+        window.Notification.requestPermission();
+      else {
+        const note = new window.Notification(msg);
+        setTimeout(() => note.close(), ttl || 1000);
+      }
+    }
+  }
+
   updateCursors (x, y, name, guid) {
     const cursors = Object.assign({}, this.state.cursors);
     cursors[guid] = { x: x, y: y, time: new Date(), u: name };
@@ -269,6 +280,7 @@ class Game extends React.Component {
   loadMap (map, skipSave, noEmit) {
     if (!map) map = this.map;
     if (!map) return Promise.reject('no map');
+    this.notify(`loading map ${map.$id}`);
     this.saveMap();
     if (undefined === map.$id) map.$id = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
     const needsSave = this.state.isFirstLoadDone && !skipSave;

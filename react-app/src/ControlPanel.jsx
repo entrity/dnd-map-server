@@ -215,14 +215,18 @@ class ControlPanel extends React.Component {
 
   copyJson () {
     const json = this.props.game.toJson();
-    window.navigator.clipboard.writeText(json);
+    window.navigator.clipboard.writeText(json).then(() => {
+      this.props.game.notify('copied to clipboard');
+    });
   }
 
   pasteJson () {
-    if (window.confirm('Do you really want to overwrite this game with what\'s in your clipboard?')) {
-      const json = window.navigator.clipboard.readText();
-      this.props.game.fromJson(json);
-    }
+    const game = this.props.game;
+    window.navigator.clipboard.readText().then(json => {
+      game.notify('pasted from clipboard');
+      if (window.confirm(`Do you really want to overwrite this game with what\'s in your clipboard? ${json.slice(0,99)}...`))
+        game.fromJson(json);
+    }).catch(err => console.error('failed to read clipboard: ', err));
   }
 
   socketRequestRefresh () {
