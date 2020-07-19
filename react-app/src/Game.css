@@ -46,6 +46,8 @@ canvas, #control-panel {
 }
 
 #control-panel {
+	max-height: 100%;
+	overflow-y: scroll;
 	position: fixed;
 	opacity: 1;
 	z-index: var(--z-cp);
@@ -125,6 +127,8 @@ div.token.dead img {
 }
 input.text1 { width: 2em !important; }
 input.text2 { width: 3em !important; }
+input.text3 { width: 4em !important; }
+input.text4 { width: 5em !important; }
 .selected {
 	border: 6px dotted yellow;
 	margin: -6px;

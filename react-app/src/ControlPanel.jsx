@@ -73,8 +73,8 @@ class MapConfig extends React.Component {
       <input value={map.url||''} placeholder="Map url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
       <Button title="Load map" value="&#x1f23a;" onClick={this.load.bind(this)} />
       wh:
-      <input value={map.w||''} placeholder="w" className="text2" onChange={this.resize.bind(this, 'w')} type="number" min="0" step="5" title="width" />
-      <input value={map.h||''} placeholder="h" className="text2" onChange={this.resize.bind(this, 'h')} type="number" min="0" step="5" title="height" />
+      <input value={map.w||''} placeholder="w" className="text3" onChange={this.resize.bind(this, 'w')} type="number" min="0" step="5" title="width" />
+      <input value={map.h||''} placeholder="h" className="text3" onChange={this.resize.bind(this, 'h')} type="number" min="0" step="5" title="height" />
       <Button title="Delete map" value="&#x1f5d1;" onClick={this.delete.bind(this)} />
     </div>
   }
@@ -139,11 +139,11 @@ class TokenConfig extends React.Component {
         <input value={token.name||''} placeholder="Name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
         <input value={token.url||''} placeholder="Url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
         wh:
-        <input value={token.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" step="5" title="width" />
-        <input value={token.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" step="5" title="height" />
+        <input value={token.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" step="5" min="0" title="width" />
+        <input value={token.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" step="5" min="0" title="height" />
         xy:
-        <input value={token.x||''} placeholder="x" className="text2" onChange={this.onIntegerChange.bind(this, 'x')} type="number" title="x coord" />
-        <input value={token.y||''} placeholder="y" className="text2" onChange={this.onIntegerChange.bind(this, 'y')} type="number" title="y coord" />
+        <input value={token.x||''} placeholder="x" className="text3" onChange={this.onIntegerChange.bind(this, 'x')} type="number" step="5" title="x coord" />
+        <input value={token.y||''} placeholder="y" className="text3" onChange={this.onIntegerChange.bind(this, 'y')} type="number" step="5" title="y coord" />
         <select defaultValue={token.mapId} onChange={this.onMapSelect.bind(this)} title="which map(s)">
           <option>(all)</option>
           {Object.keys(maps).map((key, $i) => (
@@ -159,11 +159,11 @@ class TokenConfig extends React.Component {
         <input value={token.name||''} placeholder="Name" size="8" onChange={this.onTextChange.bind(this, 'name')} />
         <input value={token.url||''} placeholder="Url" size="8" onChange={this.onTextChange.bind(this, 'url')} />
         wh:
-        <input value={token.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" step="5" title="width" />
-        <input value={token.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" step="5" title="height" />
+        <input value={token.w||''} placeholder="w" className="text2" onChange={this.onIntegerChange.bind(this, 'w')} type="number" step="5" min="0" title="width" />
+        <input value={token.h||''} placeholder="h" className="text2" onChange={this.onIntegerChange.bind(this, 'h')} type="number" step="5" min="0" title="height" />
         xy:
-        <input value={token.x||''} placeholder="x" className="text2" onChange={this.onIntegerChange.bind(this, 'x')} type="number" title="x coord" />
-        <input value={token.y||''} placeholder="y" className="text2" onChange={this.onIntegerChange.bind(this, 'y')} type="number" title="y coord" />
+        <input value={token.x||''} placeholder="x" className="text3" onChange={this.onIntegerChange.bind(this, 'x')} type="number" step="5" title="x coord" />
+        <input value={token.y||''} placeholder="y" className="text3" onChange={this.onIntegerChange.bind(this, 'y')} type="number" step="5" title="y coord" />
       </div>
   }
 }
@@ -199,9 +199,9 @@ class ControlPanel extends React.Component {
   createToken () {
     const game = this.props.game;
     const tokensCopy = JSON.parse(JSON.stringify(game.state.tokens||[]));
-    tokensCopy.push({name: this.state.newTokenName});
+    tokensCopy.push({url: this.state.newTokenUrl});
     game.setState({tokens: tokensCopy});
-    this.setState({newTokenName: undefined});
+    this.setState({newTokenUrl: undefined});
     game.websocket.pushTokens(tokensCopy);
   }
 
@@ -309,7 +309,7 @@ class ControlPanel extends React.Component {
     if (!this.props.game.isHost) return null;
     return (<div>
       <hr />
-      <input placeholder="New token name (optional)" onChange={this.onTextChange.bind(this, 'newTokenName')} />
+      <input placeholder="New token url" onChange={this.onTextChange.bind(this, 'newTokenUrl')} value={this.state.newTokenUrl||''} />
       <Button title="Create new token" value="&#x2795;" onClick={this.createToken.bind(this)} />
       {this.props.game.state.tokens.length}
       {this.props.game.state.tokens.map((token, $i) => (
