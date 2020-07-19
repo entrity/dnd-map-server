@@ -215,10 +215,8 @@ class ControlPanel extends React.Component {
 
   copyJson () {
     const json = this.props.game.toJson();
-    var note1 = this.props.game.notify('serializing tabletop...');
     window.navigator.clipboard.writeText(json).then(() => {
       this.props.game.notify('copied to clipboard');
-      note1 && note1.close();
     }).catch(err => {
       console.error('failed to write to clipboard: ', err);
       this.props.game.notify(`failed to write to clipboard: ${err}`, 2000);
@@ -229,7 +227,7 @@ class ControlPanel extends React.Component {
     const game = this.props.game;
     const note1 = this.props.game.notify('reading clipboard...');
     window.navigator.clipboard.readText().then(json => {
-      if (window.confirm(`Do you really want to overwrite this game with what\'s in your clipboard? ${json.slice(0,99)}...`)) {
+      if (window.confirm(`Do you really want to overwrite this game with what's in your clipboard? ${json.slice(0,99)}...`)) {
         game.fromJson(json);
         game.notify('pasted from clipboard');
       }

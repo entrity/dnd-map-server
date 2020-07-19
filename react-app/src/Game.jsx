@@ -107,7 +107,7 @@ class Game extends React.Component {
 
   /* Mutate object to remove keys that begin with `$` */
   scrubObject (object) {
-    for (let key in object) if (/^\$/.test(key)) delete object[key];
+    for (let key in object) if (/^\$/.test(key) && key !== '$id') delete object[key];
   }
 
   selectToken (token, trueFalse, multiSelect) {
@@ -239,12 +239,14 @@ class Game extends React.Component {
   }
 
   notify (msg, ttl) {
+    console.log(msg);
     if (window.Notification) {
       if (window.Notification.permission !== 'granted')
         window.Notification.requestPermission();
       else {
         const note = new window.Notification(msg);
         setTimeout(() => note.close(), ttl || 1000);
+        return note;
       }
     }
   }
@@ -255,16 +257,39 @@ class Game extends React.Component {
     this.setState({cursors: cursors});
   }
 
+  updateMap (callback) {
+    return new Promise(resolve => {
+      const mapsCopy = JSON.parse(JSON.stringify(this.state.maps));
+      callback(mapsCopy[this.state.mapId]);
+      this.setState({maps: mapsCopy}, resolve);
+    });
+  }
+
+  dumpCanvas (which) {
+    const changedAt = this.map[`$${which}ChangedAt`];
+    const dumpedAt = this.map[`$${which}DumpedAt`];
+    if (this.isHost && changedAt && (!dumpedAt || dumpedAt < changedAt)) {
+      const at = new Date();
+      const url = this[`${which}Ref`].current.buildDataUrl();
+      console.log('dumped', which, url);
+      return [url, at];
+    }
+    else return [this.map[`${which}Url`], dumpedAt];
+  }
+
   /* Copy maps and dump current data urls, suitable for save to state or localStorage */
   dumpMaps () {
+    console.log('dumpMaps')
     let mapId = this.state.mapId;
     /* Infer map id if it's not set */
     if (undefined === mapId) mapId = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
     const mapsCopy = JSON.parse(JSON.stringify(this.state.maps));
     const map = mapsCopy[mapId];
     if (map && this.state.isFirstLoadDone) { /* Map may have been deleted */
-      map.fogUrl = this.fogRef.current.buildDataUrl();
-      map.drawUrl = this.drawRef.current.buildDataUrl();
+      console.log('building data urls');
+      [map.fogUrl, map.$fogDumpedAt] = this.dumpCanvas('fog');
+      [map.drawUrl, map.$drawDumpedAt] = this.dumpCanvas('draw');
+      this.notify('Data urls built');
     }
     return mapsCopy;
   }
@@ -280,17 +305,15 @@ class Game extends React.Component {
   loadMap (map, skipSave, noEmit) {
     if (!map) map = this.map;
     if (!map) return Promise.reject('no map');
-    this.notify(`loading map ${map.$id}`);
-    this.saveMap();
+    const note = this.notify(`loading map ${map.$id}...`, 6000);
     if (undefined === map.$id) map.$id = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
-    const needsSave = this.state.isFirstLoadDone && !skipSave;
+    const needsSave = this.isHost && this.state.isFirstLoadDone && !skipSave;
     const savePromise = needsSave ? this.saveMap() : Promise.resolve();
     if (!noEmit && this.isHost && this.websocket) this.websocket.pushMapId(map.$id);
+    const startStateAttrs = { mapId: map.$id, isFogLoaded: false };
+    const finishStateAttrs = { isFirstLoadDone: true, isFogLoaded: true };
     return savePromise.then(() => {
       return new Promise((resolve, reject) => {
-        console.log('loading $id', map.$id);
-        const startStateAttrs = { mapId: map.$id, isFogLoaded: false };
-        const finishStateAttrs = { isFirstLoadDone: true, isFogLoaded: true };
         this.setState(startStateAttrs, () => {
           /* Load bg first because that resizes the canvases */
           this.bgRef.current.load().then(() => {
@@ -298,19 +321,35 @@ class Game extends React.Component {
               this.fogRef.current.load(),
               this.drawRef.current.load(),
             ]).then(() => {
-              this.setState(finishStateAttrs, resolve);
-            }).catch(arg => console.error('fail loads'));
-          }).catch(arg => console.error('fail load bgRef'));
+              this.setState(finishStateAttrs, () => {
+                resolve();
+                note && note.close();
+                this.notify('map loaded');
+              });
+            }).catch(arg => {
+              console.error('fail loads:', arg);
+              this.setState(finishStateAttrs);
+            });
+          }).catch(arg => {
+            console.error('fail load bgRef:', arg);
+            this.setState(finishStateAttrs);
+          });
         });
       });
-    }).catch(arg => console.error('fail savePromise'));
+    }).catch(arg => {
+      console.error('fail savePromise:', arg);
+      this.setState(finishStateAttrs);
+    });
   }
 
   toJson (additionalAttrs) {
+    this.notify('toJson');
     const tokens = this.state.tokens.map(token => ({...token}));
     tokens.forEach(token => this.scrubObject(token));
-    const data = Object.assign({}, {
-      maps: this.dumpMaps(),
+    const maps = this.dumpMaps();
+    Object.values(maps).forEach(map => this.scrubObject(map));
+    const data = Object.assign({
+      maps: maps,
       mapId: this.map && this.map.$id,
       tokens: tokens,
     }, additionalAttrs);
@@ -318,12 +357,9 @@ class Game extends React.Component {
   }
 
   fromJson (json) {
-    const overrides = {};
-    const data = Object.assign(JSON.parse(json)||{}, overrides);
+    const data = Object.assign(JSON.parse(json)||{});
     return new Promise(resolve => {
-      this.setState(data, () => {
-        this.loadMap().then(resolve);
-      });
+      this.setState(data, () => this.loadMap().then(resolve));
     });
   }
 

@@ -6,7 +6,7 @@ class Canvas extends React.Component {
     this.canvasRef = React.createRef();
   }
 
-  buildDataUrl () { return this.getCanvas().toDataURL('image/webp', 0.25) }
+  buildDataUrl () { return this.getCanvas().toDataURL('image/webp', 0.5) }
 
   clear () {
     let node = this.canvasRef.current;
@@ -23,7 +23,7 @@ class Canvas extends React.Component {
 
   getContext () { return this.getCanvas().getContext('2d') }
 
-  drawImage (url) {
+  drawImage (url, which) {
     /* Handle 'whiteboard' (no bg img) */
     if (!url || url.trim().length === 0) {
       if (this.resizeCanvases) this.resizeCanvases(); /* Clear canvas */
@@ -49,10 +49,13 @@ class Canvas extends React.Component {
           resolve(w, h);
         });
       }
-      img.onerror = () => {
-        // NotificationManager.error(`${img.src && img.src.substr(0,155)}...`, 'drawMap: bad url');
-        console.error(`Unable to draw image`, img.src);
-        reject();
+      img.onerror = (err) => {
+        console.error(`Unable to draw image.`, img.src);
+        if (which) {
+          console.error(`Deleting ${which}Url...`);
+          this.props.game.updateMap(map => delete map[`${which}Url`]);
+        }
+        reject(`Unable to draw ${which}Url`);
       }
       img.src = url;
     });

@@ -21,12 +21,14 @@ class Overlay extends Canvas {
     ctx.fillStyle = grad;
     ctx.fillRect(x-r,y-r,x+r,y+r);
     ctx.globalCompositeOperation = 'destination-over';
+    this.props.game.updateMap(map => map.$fogChangedAt = new Date());
     if (!noEmit) this.props.game.websocket.pushFogErase(x, y, r, r2);
   }
 
   drawOrErase (x, y) {
     if (this.isEraser()) this.erase(x, y);
     else this.draw(x, y);
+    this.props.game.updateMap(map => map.$drawChangedAt = new Date());
   }
 
   draw (x, y, opts, noEmit) {
