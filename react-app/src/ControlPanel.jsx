@@ -305,17 +305,19 @@ class ControlPanel extends React.Component {
   }
 
   renderTokens () {
-    if (!this.state.toggleOnTokens) return null;
     if (!this.props.game.isHost) return null;
-    return (<div>
-      <hr />
-      <input placeholder="New token url" onChange={this.onTextChange.bind(this, 'newTokenUrl')} value={this.state.newTokenUrl||''} />
-      <Button title="Create new token" value="&#x2795;" onClick={this.createToken.bind(this)} />
-      {this.props.game.state.tokens.length}
-      {this.props.game.state.tokens.map((token, $i) => (
-        <TokenConfig key={`token${$i}`} token={token} game={this.props.game} />
-      ))}
-    </div>)
+    if (this.state.toggleOnTokens)
+      return (<div>
+        <hr />
+        <input placeholder="New token url" onChange={this.onTextChange.bind(this, 'newTokenUrl')} value={this.state.newTokenUrl||''} />
+        <Button title="Create new token" value="&#x2795;" onClick={this.createToken.bind(this)} />
+        {this.props.game.state.tokens.length}
+        {this.props.game.state.tokens.map((token, $i) => (
+          <TokenConfig key={`token${$i}`} token={token} game={this.props.game} />
+        ))}
+      </div>)
+    else
+      return this.renderSelectedTokensControls();
   }
 
   renderSelectedTokensControls () {
