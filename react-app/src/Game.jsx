@@ -202,6 +202,10 @@ class Game extends React.Component {
   }
 
   onMouseUp (evt) {
+    this.updateTokens(tok => {
+      tok.$x0 = tok.x;
+      tok.$y0 = tok.y;
+    }, true);
     this.setState({
       lastX: undefined, lastY: undefined,
     });
@@ -211,10 +215,14 @@ class Game extends React.Component {
   }
 
   onMouseDown (evt) {
-    if (evt.buttons & 1) this.setState({
-      lastX: evt.pageX, lastY: evt.pageY,
-      downX: evt.pageX, downY: evt.pageY,
-    });
+    if (evt.buttons & 1) {
+      if (!/(\s|^)token(\s|$)/.test(evt.target.getAttribute('class')))
+        this.updateTokens(tok => {delete tok.$selected});
+      this.setState({
+        lastX: evt.pageX, lastY: evt.pageY,
+        downX: evt.pageX, downY: evt.pageY,
+      });
+    }
   }
 
   onMouseMove (evt) {
