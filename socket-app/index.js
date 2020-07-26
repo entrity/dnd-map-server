@@ -58,17 +58,11 @@ function isExpired (obj) {
 function onMessage (msg) {
   const data = JSON.parse(msg);
   /* Forward message to all other clients (for this room) */
-  if (data.t) {
-    data.from = this.guid;
-    ws.clients.forEach(conn => {
-      if (conn.room !== this.room) return;
-      if (data.to && data.to !== conn.guid) return;
-      if (conn !== this) { conn.send(JSON.stringify(data)) }
-    });
-  /* Assign key-val to this connection (e.g. isHost) */
-  } else {
-    Object.assign(this, msg);
-  }
+  ws.clients.forEach(conn => {
+    if (conn.room !== this.room) return; /* Don't send to other rooms */
+    if (conn === this) return; /* Don't send back to sender */
+    conn.send(JSON.stringify(data));
+  });
 }
 
 console.log('starting...')
