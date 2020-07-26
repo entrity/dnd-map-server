@@ -1,4 +1,5 @@
 import React from 'react';
+import guid from './Guid.jsx';
 
 function Button(props) {
   const {title, value, onClick, isSelected, style, disabled, ..._} = props; /* eslint-disable-line no-unused-vars */
@@ -199,7 +200,7 @@ class ControlPanel extends React.Component {
   createToken () {
     const game = this.props.game;
     const tokensCopy = JSON.parse(JSON.stringify(game.state.tokens||[]));
-    tokensCopy.push({url: this.state.newTokenUrl});
+    tokensCopy.push({url: this.state.newTokenUrl, guid: guid()});
     game.setState({tokens: tokensCopy});
     this.setState({newTokenUrl: undefined});
     game.websocket.pushTokens(tokensCopy);

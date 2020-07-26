@@ -6,6 +6,7 @@ import Overlay from './Overlay.jsx';
 import ControlPanel from './ControlPanel.jsx';
 import Token from './Token.jsx';
 import Gamesocket from './Gamesocket.jsx';
+import guid from './Guid.jsx';
 
 class Game extends React.Component {
 
@@ -361,6 +362,7 @@ class Game extends React.Component {
 
   fromJson (json) {
     const data = Object.assign(JSON.parse(json)||{});
+    data.tokens.forEach(token => { if (!token.guid) token.guid = guid() });
     return new Promise(resolve => {
       this.setState(data, () => this.loadMap().then(resolve));
     });

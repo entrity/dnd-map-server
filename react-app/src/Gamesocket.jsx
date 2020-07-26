@@ -1,6 +1,7 @@
 /* cf.
 https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
 */
+import guid from './Guid.jsx';
 
 const RETRY_INTERVAL = 2500;
 
@@ -19,7 +20,7 @@ class Gamesocket {
 		let host = window.location.host.replace(/:\d+$/, '');
 		let room = this.game.room;
 		const protocol = /https/.test(window.location.protocol) ? 'wss' : 'ws';
-		this.guid = URL.createObjectURL(new Blob()).replace(/.*\//, '');
+		this.guid = guid();
 		console.log('Trying to establish websocket connection', host, room);
 		if (window[K_INTERVAL]) clearInterval(window[K_INTERVAL]);
 		if (window[K_SOCKET]) {
@@ -87,7 +88,12 @@ class Gamesocket {
 				this.game.updateTokenByIndex(data.i, token, true);
 				break;
 			case 'ts': /* all tokens */
-				this.game.setState({tokens: data.tokens});
+				const localTokensMap = this.game.state.tokens.reduce((out, tok) => {
+					out[tok.guid] = tok;
+					return out;
+				}, {});
+				const tokens = data.tokens.map(tok => Object.assign({}, localTokensMap[tok.guid], tok));
+				this.game.setState({tokens: tokens});
 				break;
 			case 'm': /* map id */
 				const map = this.game.state.maps[data.i];
