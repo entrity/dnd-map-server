@@ -1,19 +1,19 @@
 import React from 'react';
 
 function Button(props) {
-  const {title, value, onClick, isSelected, style, disabled, ..._} = props;
+  const {title, value, onClick, isSelected, style, disabled, ..._} = props; /* eslint-disable-line no-unused-vars */
   return <button title={title} onClick={onClick} className={isSelected ? 'selected' : null} style={style} disabled={disabled}><span role="img" aria-label={title}>{value}</span></button>;
 }
 
 function ToolButton(props) {
-  const {cp, title, value, game, ..._} = props;
+  const {cp, title, value, game, ..._} = props; /* eslint-disable-line no-unused-vars */
   const isSelected = title === cp.props.game.state.tool;
   const onClick = cp.setGameState.bind(cp, 'tool', title);
   return <Button title={title} value={value.toString()} onClick={onClick} isSelected={isSelected} />;
 }
 
 function ToggleButton(props) {
-  const {cp, title, value, ..._} = props;
+  const {cp, title, value, ..._} = props; /* eslint-disable-line no-unused-vars */
   const toggleKey = `toggleOn${title}`;
   const onClick = () => { cp.setState({[toggleKey]: !cp.state[toggleKey]}) };
   const isSelected = cp.state[toggleKey];
@@ -33,7 +33,7 @@ class MapConfig extends React.Component {
   resize (key, evt) {
     return this.onIntegerChange(key, evt).then(() => {
       const game = this.props.game;
-      if (game.bgRef.current && this.props.mapId == game.state.mapId) {
+      if (game.bgRef.current && this.props.mapId == game.state.mapId) { /* eslint-disable-line eqeqeq */
         return game.loadMap();
       } else return Promise.resolve();
     });

@@ -123,7 +123,7 @@ class Game extends React.Component {
         copy.$x0 = copy.x;
         copy.$y0 = copy.y;
       }
-    });
+    }, true);
   }
 
   dragSelectedTokens (evt) {
@@ -137,11 +137,12 @@ class Game extends React.Component {
     });
   }
 
-  onResize () { this.loadMap(null, true) }
+  /* Callback when the window resizes */
+  onResize () { this.loadMap(null, true, true) }
 
   onKeyDown (evt) {
     for (let x of [document.activeElement, evt.target])
-      if (x.tagName == 'INPUT' && (x.type === 'text' || x.type === 'number'))
+      if (x.tagName == 'INPUT' && (x.type === 'text' || x.type === 'number')) /* eslint-disable-line eqeqeq */
         return evt;
     const moveFactor = evt.shiftKey ? 100 : 10;
     const moveSelectedTokens = () => {
@@ -172,7 +173,7 @@ class Game extends React.Component {
   onKeyPress (evt) {
     if (!this.isHost) return evt;
     for (let x of [document.activeElement, evt.target])
-      if (x.tagName == 'INPUT' && (x.type === 'text' || x.type === 'number'))
+      if (x.tagName == 'INPUT' && (x.type === 'text' || x.type === 'number')) /* eslint-disable-line eqeqeq */
         return evt;
     function toggle (key, location) {
       (location||this).setState({[key]: !(location||this).state[key]});
@@ -238,13 +239,13 @@ class Game extends React.Component {
       this.websocket.pushCursor(evt.pageX, evt.pageY);
   }
 
-  notify (msg, ttl) {
+  notify (msg, ttl, tag) {
     console.log(msg);
     if (window.Notification) {
       if (window.Notification.permission !== 'granted')
         window.Notification.requestPermission();
       else {
-        const note = new window.Notification(msg);
+        const note = new window.Notification(msg, {tag: tag});
         setTimeout(() => note.close(), ttl || 1000);
         return note;
       }
@@ -286,10 +287,10 @@ class Game extends React.Component {
     const mapsCopy = JSON.parse(JSON.stringify(this.state.maps));
     const map = mapsCopy[mapId];
     if (map && this.state.isFirstLoadDone) { /* Map may have been deleted */
-      console.log('building data urls');
+      this.notify('Building data urls...', undefined, 'dumpMaps');
       [map.fogUrl, map.$fogDumpedAt] = this.dumpCanvas('fog');
       [map.drawUrl, map.$drawDumpedAt] = this.dumpCanvas('draw');
-      this.notify('Data urls built');
+      this.notify('Data urls readied', undefined, 'dumpMaps');
     }
     return mapsCopy;
   }
@@ -305,7 +306,7 @@ class Game extends React.Component {
   loadMap (map, skipSave, noEmit) {
     if (!map) map = this.map;
     if (!map) return Promise.reject('no map');
-    const note = this.notify(`loading map ${map.$id}...`, 6000);
+    const note = this.notify(`loading map ${map.$id}...`, 6000, 'loadMap');
     if (undefined === map.$id) map.$id = Object.keys(this.state.maps).find(key => this.state.maps[key] === this.map);
     const needsSave = this.isHost && this.state.isFirstLoadDone && !skipSave;
     const savePromise = needsSave ? this.saveMap() : Promise.resolve();
@@ -324,7 +325,7 @@ class Game extends React.Component {
               this.setState(finishStateAttrs, () => {
                 resolve();
                 note && note.close();
-                this.notify('map loaded');
+                this.notify('map loaded', undefined, 'loadMap');
               });
             }).catch(arg => {
               console.error('fail loads:', arg);
@@ -343,12 +344,14 @@ class Game extends React.Component {
   }
 
   toJson (additionalAttrs) {
-    this.notify('toJson');
+    const newGeneration = 1 + (this.state.gen || 0);
+    if (this.isHost) this.setState({gen: newGeneration}); /* Generation is tracked so that we don't get refresh loops when multiple DMs exist. */
     const tokens = this.state.tokens.map(token => ({...token}));
     tokens.forEach(token => this.scrubObject(token));
     const maps = this.dumpMaps();
     Object.values(maps).forEach(map => this.scrubObject(map));
     const data = Object.assign({
+      gen: newGeneration,
       maps: maps,
       mapId: this.map && this.map.$id,
       tokens: tokens,
